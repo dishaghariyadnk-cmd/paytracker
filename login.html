@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - DiShiv PayTracker</title>
+
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --accent-primary: #6366f1;
+      --accent-hover: #4f46e5;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --danger: #ef4444;
+      --success: #10b981;
+      --font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 400px;
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.9));
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .brand-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: white;
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-header h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-header p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .session-badge {
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: white;
+      font-family: inherit;
+      font-size: 15px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .pwd-toggle {
+      position: absolute;
+      right: 14px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .error-msg {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .toggle-auth {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .toggle-auth a {
+      color: var(--accent-primary);
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .toggle-auth a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="brand-header">
+      <div class="brand-icon">
+        <i class="fa-solid fa-vault"></i>
+      </div>
+      <h1>DiShiv PayTracker</h1>
+      <p>Disha & Shivdattsinh Private Vault</p>
+      <div class="session-badge">
+        <i class="fa-solid fa-shield-halved"></i> 15-Day Encrypted Auto-Session
+      </div>
+    </div>
+
+    <div id="errorAlert" class="error-msg"></div>
+
+    <form id="authForm" onsubmit="handleAuthSubmit(event)">
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label><i class="fa-solid fa-user"></i> Username / Account</label>
+        <input type="text" id="usernameInput" placeholder="e.g. dishiv" required autocomplete="username">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 18px;">
+        <label><i class="fa-solid fa-key"></i> Security Password / PIN</label>
+        <div class="input-wrapper">
+          <input type="password" id="passwordInput" placeholder="Enter password" required autocomplete="current-password">
+          <button type="button" class="pwd-toggle" onclick="togglePasswordVisibility()"><i class="fa-solid fa-eye" id="pwdEyeIcon"></i></button>
+        </div>
+      </div>
+
+      <button type="submit" class="primary-btn" style="width: 100%;">
+        <i class="fa-solid fa-right-to-bracket"></i> <span id="submitBtnText">Login to Vault</span>
+      </button>
+    </form>
+
+    <div class="toggle-auth">
+      <span id="toggleQuestion">Don't have an account?</span> 
+      <a id="toggleLink" onclick="toggleAuthMode()">Register First</a>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    let isRegisterMode = false;
+
+    // Check if already authenticated
+    if (auth.isAuthenticated()) {
+      window.location.href = './index.html';
+    }
+
+    function togglePasswordVisibility() {
+      const pwdInput = document.getElementById('passwordInput');
+      const eyeIcon = document.getElementById('pwdEyeIcon');
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        eyeIcon.className = 'fa-solid fa-eye-slash';
+      } else {
+        pwdInput.type = 'password';
+        eyeIcon.className = 'fa-solid fa-eye';
+      }
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      const title = document.getElementById('submitBtnText');
+      const question = document.getElementById('toggleQuestion');
+      const link = document.getElementById('toggleLink');
+      const errorAlert = document.getElementById('errorAlert');
+      errorAlert.style.display = 'none';
+
+      if (isRegisterMode) {
+        title.innerText = 'Register New Account';
+        question.innerText = 'Already have an account?';
+        link.innerText = 'Login Now';
+      } else {
+        title.innerText = 'Login to Vault';
+        question.innerText = "Don't have an account?";
+        link.innerText = 'Register First';
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const username = document.getElementById('usernameInput').value;
+      const password = document.getElementById('passwordInput').value;
+      const errorAlert = document.getElementById('errorAlert');
+
+      errorAlert.style.display = 'none';
+
+      try {
+        if (isRegisterMode) {
+          await auth.register(username, password);
+        } else {
+          await auth.login(username, password);
+        }
+        // Redirect to protected dashboard
+        window.location.href = './index.html';
+      } catch (err) {
+        errorAlert.innerText = '❌ ' + err.message;
+        errorAlert.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

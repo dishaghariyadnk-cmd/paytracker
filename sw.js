@@ -2,7 +2,9 @@ const CACHE_NAME = 'paytracker-v1';
 const ASSETS = [
   './',
   './index.html',
-  './style.css',
+  './login.html',
+  './logout.html',
+  './auth.js',
   './app.js',
   './manifest.json',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap',

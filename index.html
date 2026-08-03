@@ -25,7 +25,14 @@
   <!-- Chart.js for Visual Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Embedded CSS for 100% file:// Protocol & Standalone Compatibility -->
+  <!-- Auth Engine & Authorization Guard -->
+  <script src="auth.js"></script>
+  <script>
+    // Enforce instant 15-day security check on page load
+    auth.requireAuth();
+  </script>
+
+  <!-- Embedded CSS for 100% Standalone Compatibility -->
   <style>
     :root {
       --bg-primary: #0f172a;
@@ -734,32 +741,8 @@
     }
   </style>
 </head>
-  <!-- PIN Lock Screen Overlay -->
-  <div id="pinLockOverlay" class="modal-overlay" style="z-index: 9999; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(16px);">
-    <div class="modal-card" style="text-align: center; max-width: 340px; padding: 28px 20px;">
-      <div class="brand-icon" style="margin: 0 auto 16px auto; width: 56px; height: 56px; font-size: 26px;">
-        <i class="fa-solid fa-lock"></i>
-      </div>
-      <h2 id="pinLockTitle" style="font-size: 20px; font-weight: 800; color: #f8fafc;">DiShiv Vault Locked</h2>
-      <p id="pinLockSub" style="font-size: 12px; color: #94a3b8; margin-top: 6px;">Enter your 4-digit PIN to access budget</p>
-
-      <div style="margin: 20px 0;">
-        <input type="password" id="pinInput" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric" style="font-size: 28px; letter-spacing: 12px; text-align: center; font-weight: 800; background: rgba(255,255,255,0.06); border: 1px solid rgba(99, 102, 241, 0.4); width: 180px; padding: 10px; border-radius: 12px; color: #6366f1;">
-      </div>
-
-      <div id="pinErrorMsg" style="color: #ef4444; font-size: 12px; font-weight: 600; min-height: 18px; margin-bottom: 12px;"></div>
-
-      <button class="primary-btn full-width" onclick="app.verifyPIN()">
-        <i class="fa-solid fa-key"></i> Unlock DiShiv Vault
-      </button>
-
-      <button id="resetPinBtn" class="tx-delete-btn" style="margin-top: 16px; font-size: 11px; display: none;" onclick="app.resetPIN()">
-        Reset Passcode (Wipes Local Cache)
-      </button>
-    </div>
-  </div>
-
-  <div class="app-container" id="appMainContent" style="display: none !important;">
+<body>
+  <div class="app-container" id="appMainContent">
     <!-- Header -->
     <header class="app-header">
       <div class="brand">
@@ -775,8 +758,8 @@
         <span id="syncStatusBadge" class="sync-badge offline" onclick="app.syncPendingData()">
           <i class="fa-solid fa-rotate"></i> <span id="syncText">Sheet Local</span>
         </span>
-        <button class="sync-badge danger" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); margin-left: 6px;" onclick="app.lockVault()">
-          <i class="fa-solid fa-right-from-bracket"></i> Lock
+        <button class="sync-badge danger" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); margin-left: 6px; cursor: pointer;" onclick="auth.logout()">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
         </button>
       </div>
     </header>

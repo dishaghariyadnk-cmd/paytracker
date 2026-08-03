@@ -2,7 +2,7 @@
   "name": "DiShiv PayTracker (Disha & Shivdattsinh)",
   "short_name": "DiShiv Pay",
   "description": "Disha & Shivdattsinh Personal Salary, Expense & IPO Vault",
-  "start_url": "./index.html",
+  "start_url": "./login.html",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#4f46e5",
