@@ -75,7 +75,8 @@ class PayTrackerApp {
 
   unlockApp() {
     document.getElementById('pinLockOverlay').style.display = 'none';
-    document.getElementById('appMainContent').style.display = 'flex';
+    const mainContent = document.getElementById('appMainContent');
+    mainContent.style.setProperty('display', 'flex', 'important');
     this.init();
   }
 
