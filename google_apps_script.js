@@ -28,11 +28,12 @@ function doPost(e) {
         "Amount (₹)", 
         "Payment Method", 
         "Notes / Receiver", 
+        "Logged By",
         "IPO Status / Status",
         "Synced At"
       ]);
       // Format header row bold
-      sheet.getRange(1, 1, 1, 9).setFontWeight("bold").setBackground("#e8f0fe");
+      sheet.getRange(1, 1, 1, 10).setFontWeight("bold").setBackground("#e8f0fe");
     }
     
     // Check if e contains array of transactions or single transaction
@@ -48,6 +49,7 @@ function doPost(e) {
         item.amount || 0,
         item.paymentMethod || "GPay",
         item.notes || "",
+        item.loggedBy || "Disha",
         item.status || "Completed",
         new Date().toLocaleString("en-IN")
       ]);

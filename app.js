@@ -122,6 +122,7 @@ class PayTrackerApp {
       amount: amount,
       paymentMethod: paymentMethod,
       notes: notes || `${this.selectedCategory} via ${paymentMethod}`,
+      loggedBy: typeof auth !== 'undefined' ? auth.getCurrentUser() : 'Disha & Shivdattsinh',
       status: 'Completed'
     };
 
@@ -382,9 +383,9 @@ class PayTrackerApp {
     `).join('');
   }
 
-  // --- Analytics Charts ---
+  // --- Analytics Charts & Couple Comparison ---
   renderCharts() {
-    // 1. Pie Chart
+    // 1. Pie Chart (Category Breakdown)
     const categories = ['Groceries', 'Petrol', 'Shopping', 'Transfer to Husband', 'Gas & Bills', 'Food & Dining', 'Others'];
     const dataByCat = categories.map(cat => {
       return this.transactions.filter(tx => tx.category === cat).reduce((sum, tx) => sum + tx.amount, 0);
@@ -410,35 +411,27 @@ class PayTrackerApp {
       }
     });
 
-    // 2. Bar Chart (Daily Expenses)
+    // 2. Couple Comparison Chart (Disha vs Shivdattsinh Spending)
     const ctxBar = document.getElementById('dailyBarChart').getContext('2d');
     if (this.barChart) this.barChart.destroy();
 
-    // Group last 7 days
-    const last7Days = [];
-    const dayAmounts = [];
+    const dishaTotal = this.transactions
+      .filter(tx => (tx.loggedBy || '').toLowerCase().includes('disha') || (tx.loggedBy || '').toLowerCase().includes('owner'))
+      .reduce((sum, tx) => sum + tx.amount, 0);
 
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-      last7Days.push(dateStr);
-
-      const dayTotal = this.transactions
-        .filter(tx => new Date(tx.id.replace('TX-', '') * 1).toLocaleDateString('en-IN') === d.toLocaleDateString('en-IN'))
-        .reduce((sum, tx) => sum + tx.amount, 0);
-      dayAmounts.push(dayTotal);
-    }
+    const shivTotal = this.transactions
+      .filter(tx => !(tx.loggedBy || '').toLowerCase().includes('disha') && !(tx.loggedBy || '').toLowerCase().includes('owner'))
+      .reduce((sum, tx) => sum + tx.amount, 0);
 
     this.barChart = new Chart(ctxBar, {
       type: 'bar',
       data: {
-        labels: last7Days,
+        labels: ['Disha (Owner)', 'Shivdattsinh (User)'],
         datasets: [{
-          label: 'Daily Spent (₹)',
-          data: dayAmounts,
-          backgroundColor: '#6366f1',
-          borderRadius: 6
+          label: 'Total Expenses This Month (₹)',
+          data: [dishaTotal, shivTotal],
+          backgroundColor: ['#ec4899', '#6366f1'],
+          borderRadius: 8
         }]
       },
       options: {
@@ -454,40 +447,28 @@ class PayTrackerApp {
     });
   }
 
-  // --- Tabs Navigation ---
-  switchTab(tabId, btnElement) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-
-    document.getElementById(tabId).classList.remove('hidden');
-    if (btnElement) btnElement.classList.add('active');
-
-    if (tabId === 'analyticsTab') {
-      this.renderCharts();
-    }
-  }
-
-  // --- Modal & Settings ---
+  // --- Modal & Settings & Role Restrictions ---
   openSalaryModal() {
+    if (typeof auth !== 'undefined' && !auth.isOwner()) {
+      alert('🔒 Access Restricted: Only Owner (Disha) can edit monthly salary!');
+      return;
+    }
     document.getElementById('salaryInputModal').value = this.salary || '';
     document.getElementById('salaryModal').classList.remove('hidden');
   }
 
-  closeSalaryModal() {
-    document.getElementById('salaryModal').classList.add('hidden');
-  }
-
-  saveSalaryFromModal() {
-    const val = parseFloat(document.getElementById('salaryInputModal').value);
-    if (!isNaN(val) && val >= 0) {
-      this.salary = val;
-      this.renderHeaderAndMetrics();
-      this.closeSalaryModal();
-    }
-  }
-
   loadSettings() {
-    document.getElementById('googleSheetScriptUrl').value = this.googleScriptUrl;
+    const urlInput = document.getElementById('googleSheetScriptUrl');
+    urlInput.value = this.googleScriptUrl;
+
+    if (typeof auth !== 'undefined' && !auth.isOwner()) {
+      // USER Role Restrictions: Cannot unlink or edit sheet settings
+      urlInput.disabled = true;
+      urlInput.placeholder = '🔒 Linked by Owner (Disha)';
+      const saveBtn = document.querySelector('#settingsTab .primary-btn');
+      if (saveBtn) saveBtn.style.display = 'none';
+    }
+
     fetch('./google_apps_script.js')
       .then(res => res.text())
       .then(text => {
@@ -496,14 +477,42 @@ class PayTrackerApp {
       .catch(() => {
         document.getElementById('appsScriptCodeSnippet').innerText = 'Apps Script snippet file available in workspace.';
       });
+
+    // Schedule 8:30 PM Evening Reminder
+    this.scheduleEveningReminder();
   }
 
   saveSettings() {
+    if (typeof auth !== 'undefined' && !auth.isOwner()) {
+      alert('🔒 Access Restricted: Only Owner (Disha) can modify Google Sheet URL settings!');
+      return;
+    }
     const url = document.getElementById('googleSheetScriptUrl').value.trim();
     this.googleScriptUrl = url;
     localStorage.setItem('paytracker_googleScriptUrl', url);
     this.checkSyncStatus();
     alert('Google Apps Script Web App URL saved successfully!');
+  }
+
+  // --- 8:30 PM Daily Reminder System ---
+  scheduleEveningReminder() {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+
+    // Check time periodically
+    setInterval(() => {
+      const now = new Date();
+      // 8:30 PM = 20:30
+      if (now.getHours() === 20 && now.getMinutes() === 30 && now.getSeconds() === 0) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('🔔 DiShiv PayTracker Evening Reminder', {
+            body: 'Did you make any GPay, PhonePe or Paytm payment today? Tap to record it in 2 seconds!',
+            icon: 'https://cdn-icons-png.flaticon.com/512/2845/2845722.png'
+          });
+        }
+      }
+    }, 1000);
   }
 
   async testGoogleSheetConnection() {

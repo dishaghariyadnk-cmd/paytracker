@@ -115,8 +115,16 @@ class DiShivAuthEngine {
     }
   }
 
-  getCurrentUser() {
-    return localStorage.getItem(this.STORAGE_KEY_USER) || 'Disha & Shivdattsinh';
+  getUserRole() {
+    const user = (this.getCurrentUser() || '').toLowerCase();
+    if (user.includes('disha') || user.includes('owner') || user.includes('dishiv')) {
+      return 'OWNER';
+    }
+    return 'USER';
+  }
+
+  isOwner() {
+    return this.getUserRole() === 'OWNER';
   }
 
   getDaysRemainingInSession() {
