@@ -228,6 +228,14 @@
         <input type="text" id="usernameInput" placeholder="e.g. dishiv" required autocomplete="username">
       </div>
 
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label><i class="fa-solid fa-user-gear"></i> Account Role</label>
+        <select id="roleInput" style="padding: 14px 16px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 12px; color: white; font-family: inherit; font-size: 14px;">
+          <option value="OWNER" selected>👑 Owner (Disha - Super Admin)</option>
+          <option value="USER">👤 User (Shivdattsinh - Standard User)</option>
+        </select>
+      </div>
+
       <div class="form-group" style="margin-bottom: 18px;">
         <label><i class="fa-solid fa-key"></i> Security Password / PIN</label>
         <div class="input-wrapper">
@@ -290,6 +298,7 @@
     async function handleAuthSubmit(e) {
       e.preventDefault();
       const username = document.getElementById('usernameInput').value;
+      const role = document.getElementById('roleInput').value;
       const password = document.getElementById('passwordInput').value;
       const errorAlert = document.getElementById('errorAlert');
 
@@ -297,9 +306,9 @@
 
       try {
         if (isRegisterMode) {
-          await auth.register(username, password);
+          await auth.register(username, password, role);
         } else {
-          await auth.login(username, password);
+          await auth.login(username, password, role);
         }
         // Redirect to protected dashboard
         window.location.href = './index.html';

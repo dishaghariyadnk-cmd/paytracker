@@ -44,7 +44,7 @@ class DiShivAuthEngine {
   }
 
   // Register New Account
-  async register(username, password) {
+  async register(username, password, role = 'OWNER') {
     const existingUsers = JSON.parse(localStorage.getItem('dishiv_registered_users') || '{}');
     const userKey = username.trim().toLowerCase();
 
@@ -55,25 +55,26 @@ class DiShivAuthEngine {
     const hashedPwd = await this.hashPassword(password);
     existingUsers[userKey] = {
       username: username.trim(),
+      role: role,
       passwordHash: hashedPwd,
       created: new Date().toISOString()
     };
 
     localStorage.setItem('dishiv_registered_users', JSON.stringify(existingUsers));
-    return this.login(username, password);
+    return this.login(username, password, role);
   }
 
   // Login Existing Account & Create 15-Day Session
-  async login(username, password) {
+  async login(username, password, role = 'OWNER') {
     const existingUsers = JSON.parse(localStorage.getItem('dishiv_registered_users') || '{}');
     const userKey = username.trim().toLowerCase();
 
     // Default Seed user if no users registered yet
     if (Object.keys(existingUsers).length === 0) {
-      // Pre-seed default couple account
       const defaultHash = await this.hashPassword(password);
       existingUsers[userKey] = {
         username: username.trim(),
+        role: role,
         passwordHash: defaultHash,
         created: new Date().toISOString()
       };
@@ -95,10 +96,19 @@ class DiShivAuthEngine {
     const expireTime = Date.now() + this.FIFTEEN_DAYS_MS;
 
     localStorage.setItem(this.STORAGE_KEY_USER, userAccount.username);
+    localStorage.setItem('dishiv_auth_role', userAccount.role || role);
     localStorage.setItem(this.STORAGE_KEY_TOKEN, token);
     localStorage.setItem(this.STORAGE_KEY_EXPIRE, expireTime.toString());
 
-    return { user: userAccount.username, token, expireTime };
+    return { user: userAccount.username, role: userAccount.role || role, token, expireTime };
+  }
+
+  getUserRole() {
+    return localStorage.getItem('dishiv_auth_role') || 'OWNER';
+  }
+
+  isOwner() {
+    return this.getUserRole() === 'OWNER';
   }
 
   // Logout Current Session
