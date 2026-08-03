@@ -2,6 +2,7 @@
 class PayTrackerApp {
   constructor() {
     this.selectedCategory = 'Groceries';
+    this.pinHash = localStorage.getItem('paytracker_pinHash') || '';
     this.salary = parseFloat(localStorage.getItem('paytracker_salary')) || 0;
     this.transactions = JSON.parse(localStorage.getItem('paytracker_transactions')) || [];
     this.ipoList = JSON.parse(localStorage.getItem('paytracker_ipoList')) || [];
@@ -11,7 +12,78 @@ class PayTrackerApp {
     this.pieChart = null;
     this.barChart = null;
 
+    this.initPINState();
+  }
+
+  // --- Cryptographic SHA-256 Hashing ---
+  async hashPIN(pinText) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode('DISHIV_SALT_' + pinText);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  initPINState() {
+    const overlay = document.getElementById('pinLockOverlay');
+    const title = document.getElementById('pinLockTitle');
+    const sub = document.getElementById('pinLockSub');
+    const input = document.getElementById('pinInput');
+
+    // Auto-focus & enter key listener
+    input.addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') this.verifyPIN();
+    });
+
+    if (!this.pinHash) {
+      // First time setup
+      title.innerText = 'Create 4-Digit Passcode';
+      sub.innerText = 'Set a private PIN for Disha & Shivdattsinh Vault';
+    } else {
+      title.innerText = 'DiShiv Vault Locked';
+      sub.innerText = 'Enter your 4-digit PIN to access budget';
+    }
+  }
+
+  async verifyPIN() {
+    const input = document.getElementById('pinInput');
+    const errorMsg = document.getElementById('pinErrorMsg');
+    const val = input.value.trim();
+
+    if (!val || val.length !== 4 || isNaN(val)) {
+      errorMsg.innerText = 'Please enter a valid 4-digit numeric PIN!';
+      return;
+    }
+
+    const enteredHash = await this.hashPIN(val);
+
+    if (!this.pinHash) {
+      // First time setup - Save SHA-256 Hash
+      this.pinHash = enteredHash;
+      localStorage.setItem('paytracker_pinHash', this.pinHash);
+      alert('🔒 4-Digit Passcode created successfully! Your vault is now encrypted.');
+      this.unlockApp();
+    } else if (enteredHash === this.pinHash) {
+      // PIN Matches!
+      this.unlockApp();
+    } else {
+      errorMsg.innerText = '❌ Incorrect PIN! Access Denied.';
+      input.value = '';
+      document.getElementById('resetPinBtn').style.display = 'inline-block';
+    }
+  }
+
+  unlockApp() {
+    document.getElementById('pinLockOverlay').style.display = 'none';
+    document.getElementById('appMainContent').style.display = 'flex';
     this.init();
+  }
+
+  resetPIN() {
+    if (confirm('Reset Passcode? This will wipe your local PIN cache.')) {
+      localStorage.removeItem('paytracker_pinHash');
+      location.reload();
+    }
   }
 
   init() {
