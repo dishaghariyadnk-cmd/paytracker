@@ -447,6 +447,33 @@ class PayTrackerApp {
     });
   }
 
+  // --- Tabs Navigation ---
+  switchTab(tabId, btnElement) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+    document.getElementById(tabId).classList.remove('hidden');
+    if (btnElement) btnElement.classList.add('active');
+
+    if (tabId === 'analyticsTab') {
+      this.renderCharts();
+    }
+  }
+
+  // --- Salary Modal Handlers ---
+  closeSalaryModal() {
+    document.getElementById('salaryModal').classList.add('hidden');
+  }
+
+  saveSalaryFromModal() {
+    const val = parseFloat(document.getElementById('salaryInputModal').value);
+    if (!isNaN(val) && val >= 0) {
+      this.salary = val;
+      this.renderHeaderAndMetrics();
+      this.closeSalaryModal();
+    }
+  }
+
   // --- Modal & Settings & Role Restrictions ---
   openSalaryModal() {
     if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
