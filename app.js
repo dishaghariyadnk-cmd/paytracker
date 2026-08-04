@@ -449,7 +449,7 @@ class PayTrackerApp {
 
   // --- Modal & Settings & Role Restrictions ---
   openSalaryModal() {
-    if (typeof auth !== 'undefined' && !auth.isOwner()) {
+    if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
       alert('🔒 Access Restricted: Only Owner (Disha) can edit monthly salary!');
       return;
     }
@@ -461,7 +461,7 @@ class PayTrackerApp {
     const urlInput = document.getElementById('googleSheetScriptUrl');
     urlInput.value = this.googleScriptUrl;
 
-    if (typeof auth !== 'undefined' && !auth.isOwner()) {
+    if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
       // USER Role Restrictions: Cannot unlink or edit sheet settings
       urlInput.disabled = true;
       urlInput.placeholder = '🔒 Linked by Owner (Disha)';
@@ -483,7 +483,7 @@ class PayTrackerApp {
   }
 
   saveSettings() {
-    if (typeof auth !== 'undefined' && !auth.isOwner()) {
+    if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
       alert('🔒 Access Restricted: Only Owner (Disha) can modify Google Sheet URL settings!');
       return;
     }
