@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiShiv PayTracker - Disha & Shivdattsinh</title>
+
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DiShiv Pay">
+
+  <!-- Mobile Home Screen Icons -->
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2845/2845722.png">
+
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js & Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Modular Services -->
+  <script src="../src/config/database.js?v=3"></script>
+  <script src="../src/services/audit.service.js?v=3"></script>
+  <script src="../src/services/auth.service.js?v=3"></script>
+  <script src="../src/services/transaction.service.js?v=3"></script>
+  <script src="../src/services/ipo.service.js?v=3"></script>
+  <script src="../src/services/budget.service.js?v=3"></script>
+
+  <!-- Auth Engine & Authorization Guard -->
+  <script src="js/auth.js?v=3"></script>
+  <script>
+    auth.requireAuth();
+  </script>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div>
+          <h1>DiShiv PayTracker</h1>
+          <p class="subtitle" id="userProfileSub">Loading user...</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="app.openSalaryModal()" title="Edit Monthly Salary">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+        <button class="icon-btn logout-btn" onclick="auth.logout()" title="Logout Vault">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon salary-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+        <div class="metric-info">
+          <span class="label">Monthly Salary</span>
+          <h2 id="salaryDisplay">₹0</h2>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon spent-icon"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+        <div class="metric-info">
+          <span class="label">Total Spent</span>
+          <h2 id="totalExpenseDisplay">₹0</h2>
+        </div>
+      </div>
+
+      <div class="metric-card" id="balanceCard">
+        <div class="metric-icon balance-icon"><i class="fa-solid fa-piggy-bank"></i></div>
+        <div class="metric-info">
+          <span class="label">Remaining Balance</span>
+          <h2 id="balanceDisplay">₹0</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- 50-30-20 Envelope Budgeting Card -->
+    <section class="section-card envelope-card">
+      <h2 class="section-title"><i class="fa-solid fa-box-archive"></i> 50-30-20 Smart Envelope Allocation</h2>
+      <div class="envelope-grid">
+        <div class="env-item needs">
+          <span>🛒 Needs (50%)</span>
+          <strong id="envNeedsDisplay">₹0</strong>
+        </div>
+        <div class="env-item investments">
+          <span>📈 Investments (20%)</span>
+          <strong id="envInvestmentsDisplay">₹0</strong>
+        </div>
+        <div class="env-item wants">
+          <span>🛍️ Wants (30%)</span>
+          <strong id="envWantsDisplay">₹0</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="app.switchTab('trackerTab', this)">
+        <i class="fa-solid fa-receipt"></i> Expense Tracker
+      </button>
+      <button class="tab-btn" onclick="app.switchTab('ipoTab', this)">
+        <i class="fa-solid fa-chart-line"></i> IPO Vault
+      </button>
+      <button class="tab-btn" onclick="app.switchTab('analyticsTab', this)">
+        <i class="fa-solid fa-chart-pie"></i> Analytics
+      </button>
+      <button class="tab-btn" onclick="app.switchTab('settingsTab', this)">
+        <i class="fa-solid fa-gear"></i> Sync & Database
+      </button>
+    </div>
+
+    <!-- TAB 1: EXPENSE TRACKER TAB -->
+    <main id="trackerTab" class="tab-content">
+      <section class="section-card">
+        <h2 class="section-title"><i class="fa-solid fa-plus-circle"></i> Quick Payment Entry</h2>
+
+        <div class="form-group">
+          <label>Select Payment Category</label>
+          <div class="category-grid">
+            <button class="cat-chip active" onclick="app.selectCategory('Groceries', this)">🛒 Groceries</button>
+            <button class="cat-chip" onclick="app.selectCategory('IPO Application', this)">📈 IPO Application</button>
+            <button class="cat-chip" onclick="app.selectCategory('Petrol / Fuel', this)">⛽ Petrol / Fuel</button>
+            <button class="cat-chip" onclick="app.selectCategory('Gas Cylinder', this)">🔥 Gas Cylinder</button>
+            <button class="cat-chip" onclick="app.selectCategory('Shopping & Clothes', this)">🛍️ Shopping</button>
+            <button class="cat-chip" onclick="app.selectCategory('Mobile Transfer to Husband', this)">📲 Husband Transfer</button>
+            <button class="cat-chip" onclick="app.selectCategory('Electricity / Bills', this)">💡 Bills</button>
+            <button class="cat-chip" onclick="app.selectCategory('Food & Dining', this)">🍔 Food & Dining</button>
+            <button class="cat-chip" onclick="app.selectCategory('Medical & Health', this)">💊 Medical</button>
+            <button class="cat-chip" onclick="app.selectCategory('General / Other', this)">💸 General</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>Amount Paid (₹)</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-indian-rupee-sign"></i>
+              <input type="number" id="txAmount" placeholder="e.g. 500" step="any" required>
+            </div>
+          </div>
+          <div class="form-group flex-1">
+            <label>Payment Method</label>
+            <select id="txPaymentMethod">
+              <option value="GPay (QR Scan)">GPay (QR)</option>
+              <option value="PhonePe">PhonePe</option>
+              <option value="Paytm">Paytm</option>
+              <option value="Netbanking (IPO)">Netbanking</option>
+              <option value="WhatsApp Pay">WhatsApp Pay</option>
+              <option value="Cash / Other">Cash</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="numpad-row">
+          <button type="button" class="numpad-btn" onclick="app.appendNumpad(50)">+ ₹50</button>
+          <button type="button" class="numpad-btn" onclick="app.appendNumpad(100)">+ ₹100</button>
+          <button type="button" class="numpad-btn" onclick="app.appendNumpad(200)">+ ₹200</button>
+          <button type="button" class="numpad-btn" onclick="app.appendNumpad(500)">+ ₹500</button>
+          <button type="button" class="numpad-btn" onclick="app.appendNumpad(1000)">+ ₹1000</button>
+        </div>
+
+        <div class="form-group">
+          <label>Notes / Receiver Name (Optional)</label>
+          <input type="text" id="txNotes" placeholder="e.g. Reliance Smart, D-Mart, Petrol Pump">
+        </div>
+
+        <button class="primary-btn submit-btn" onclick="app.handleAddEntry()">
+          <i class="fa-solid fa-paper-plane"></i> Record Payment Entry
+        </button>
+      </section>
+
+      <section class="section-card">
+        <div class="history-header">
+          <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> Payment History</h2>
+          <span class="badge" id="syncStatusBadge">🟢 Cloud DB Synced</span>
+        </div>
+
+        <div id="txHistoryList" class="history-list">
+          <div class="empty-state">Loading payment entries...</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- TAB 2: IPO APPLICATION TRACKER TAB -->
+    <main id="ipoTab" class="tab-content hidden">
+      <section class="section-card">
+        <h2 class="section-title"><i class="fa-solid fa-file-invoice-dollar"></i> IPO Application Tracker</h2>
+
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>IPO Company Name</label>
+            <input type="text" id="ipoName" placeholder="e.g. Tata Technologies, Bajaj Housing">
+          </div>
+          <div class="form-group flex-1">
+            <label>Blocked Amount (₹)</label>
+            <input type="number" id="ipoAmount" placeholder="e.g. 14900" step="any">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>Payment Method</label>
+            <select id="ipoPaymentMethod">
+              <option value="Netbanking (ASBA)">Netbanking ASBA</option>
+              <option value="GPay UPI">GPay UPI</option>
+              <option value="PhonePe UPI">PhonePe UPI</option>
+            </select>
+          </div>
+          <div class="form-group flex-1 align-bottom">
+            <button class="primary-btn submit-btn" onclick="app.quickAddIPO()">
+              <i class="fa-solid fa-lock"></i> Add IPO Application
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h2 class="section-title"><i class="fa-solid fa-list-check"></i> Applied IPOs & Allotment Status</h2>
+        <div id="ipoListContainer" class="history-list">
+          <div class="empty-state">No IPO applications recorded yet.</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- TAB 3: VISUAL ANALYTICS TAB -->
+    <main id="analyticsTab" class="tab-content hidden">
+      <section class="section-card">
+        <h2 class="section-title"><i class="fa-solid fa-chart-pie"></i> Category Expense Breakdown</h2>
+        <div class="chart-container">
+          <canvas id="categoryPieChart"></canvas>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h2 class="section-title"><i class="fa-solid fa-chart-column"></i> Daily Spending Trend</h2>
+        <div class="chart-container">
+          <canvas id="dailyBarChart"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <!-- TAB 4: SETTINGS & GOOGLE SHEET SYNC TAB -->
+    <main id="settingsTab" class="tab-content hidden">
+      <!-- Supabase Cloud DB Card -->
+      <section class="section-card">
+        <h2 class="section-title"><i class="fa-solid fa-database"></i> Supabase Cloud PostgreSQL Database</h2>
+        <p class="section-desc">Connect 24/7 Cloud DB for anywhere access outside office (5G/4G/Wi-Fi)</p>
+
+        <div class="form-group">
+          <label>Supabase Project URL</label>
+          <input type="url" id="supabaseUrlInput" placeholder="https://xyz.supabase.co">
+        </div>
+
+        <div class="form-group">
+          <label>Supabase Anon Public Key</label>
+          <input type="text" id="supabaseKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
+        </div>
+
+        <div class="btn-group">
+          <button class="primary-btn" onclick="app.saveSupabaseSettings()">
+            <i class="fa-solid fa-floppy-disk"></i> Save Supabase Cloud DB
+          </button>
+          <button class="secondary-btn" onclick="app.testSupabaseConnection()">
+            <i class="fa-solid fa-plug"></i> Test DB Connection
+          </button>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h2 class="section-title"><i class="fa-solid fa-file-excel"></i> Google Sheet Live Sync Setup</h2>
+        <p class="section-desc">Connect your Web App directly to your Google Sheet (`1bfNMmLVRhPTvibBlHYiAP_Wx4zssbUDiZBuyGCW8RNA`)</p>
+
+        <div class="form-group">
+          <label>Google Apps Script Web App URL</label>
+          <input type="url" id="googleSheetScriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+
+        <div class="btn-group">
+          <button class="primary-btn" onclick="app.saveSettings()">
+            <i class="fa-solid fa-floppy-disk"></i> Save Web App URL
+          </button>
+          <button class="secondary-btn" onclick="app.testGoogleSheetConnection()">
+            <i class="fa-solid fa-paper-plane"></i> Test Sync Connection
+          </button>
+          <button class="secondary-btn" style="background: rgba(245, 158, 11, 0.15); color: #fcd34d; border-color: rgba(245, 158, 11, 0.3);" onclick="app.triggerTestNotification()">
+            <i class="fa-solid fa-bell"></i> Test Notification Now
+          </button>
+        </div>
+      </section>
+
+      <!-- Owner Security & Login Audit Card -->
+      <section class="section-card" id="ownerAuditSection">
+        <div class="history-header">
+          <div>
+            <h2 class="section-title"><i class="fa-solid fa-user-shield"></i> Login & Device Audit History</h2>
+            <p class="subtitle">Track who logged in, date/time & device info (Owner Only)</p>
+          </div>
+          <button class="secondary-btn" onclick="app.loadAuditLogs()">
+            <i class="fa-solid fa-rotate"></i> Refresh Logs
+          </button>
+        </div>
+
+        <div id="auditLogsList" class="history-list">
+          <div class="empty-state">Loading audit logs...</div>
+        </div>
+      </section>
+
+      <section class="section-card danger-zone">
+        <h2 class="section-title"><i class="fa-solid fa-database"></i> Data Management</h2>
+        <div class="btn-group">
+          <button class="secondary-btn" onclick="app.exportCSV()">
+            <i class="fa-solid fa-download"></i> Export Data to CSV
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Salary Modal -->
+  <div id="salaryModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-wallet"></i> Set Monthly Salary</h3>
+        <button class="close-btn" onclick="app.closeSalaryModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Monthly Salary (₹)</label>
+          <input type="number" id="salaryInputModal" placeholder="e.g. 50000" step="any">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary-btn" onclick="app.closeSalaryModal()">Cancel</button>
+        <button class="primary-btn" onclick="app.saveSalaryFromModal()">Save Salary</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client API Layer & App Orchestrator -->
+  <script src="js/api.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
+</body>
+</html>
