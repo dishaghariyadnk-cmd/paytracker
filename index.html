@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiShiv PayTracker Gateway Router</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="src/config/database.js?v=3"></script>
+  <script src="src/services/audit.service.js?v=3"></script>
+  <script src="src/services/auth.service.js?v=3"></script>
+  <script src="auth.js?v=3"></script>
+  <script>
+    // Express / Node Gateway Router
+    if (auth.isAuthenticated()) {
+      window.location.href = './public/index.html';
+    } else {
+      window.location.href = './public/login.html';
+    }
+  </script>
+</head>
+<body style="background:#0f172a; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh;">
+  <p>Loading DiShiv PayTracker Express API Vault...</p>
+</body>
+</html>

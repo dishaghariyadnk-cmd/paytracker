@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logged Out - DiShiv PayTracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body style="display:flex; align-items:center; justify-content:center; min-height:100vh; background:#0f172a; color:#fff;">
+  <div style="width:100%; max-width:400px; padding:2rem; background:#1e293b; border-radius:1rem; border:1px solid rgba(255,255,255,0.08); text-align:center;">
+    <div style="font-size:3rem; margin-bottom:1rem;">🔒</div>
+    <h2 style="margin-bottom:0.5rem;">Vault Locked</h2>
+    <p id="logoutReasonMsg" style="color:#94a3b8; font-size:0.9rem; margin-bottom:1.5rem;">You have logged out successfully.</p>
+    <a href="./login.html" class="primary-btn" style="display:inline-block; padding:0.75rem 1.5rem; background:linear-gradient(135deg, #6366f1, #8b5cf6); border-radius:0.5rem; color:#fff; text-decoration:none; font-weight:600;">
+      Log In Again
+    </a>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const reason = urlParams.get('reason');
+    const msgEl = document.getElementById('logoutReasonMsg');
+    if (reason === 'expired') {
+      msgEl.innerText = 'Your 15-day security session has expired. Please log in again to continue.';
+    } else {
+      msgEl.innerText = 'You have logged out of your session successfully.';
+    }
+  </script>
+</body>
+</html>
