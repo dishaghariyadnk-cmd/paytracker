@@ -103,29 +103,14 @@ class DiShivAuthEngine {
     return { user: userAccount.username, role: userAccount.role || role, token, expireTime };
   }
 
-  getUserRole() {
-    return localStorage.getItem('dishiv_auth_role') || 'OWNER';
-  }
-
-  isOwner() {
-    return this.getUserRole() === 'OWNER';
-  }
-
-  // Logout Current Session
-  logout(isExpired = false) {
-    localStorage.removeItem(this.STORAGE_KEY_USER);
-    localStorage.removeItem(this.STORAGE_KEY_TOKEN);
-    localStorage.removeItem(this.STORAGE_KEY_EXPIRE);
-    sessionStorage.clear();
-
-    if (isExpired) {
-      window.location.href = './logout.html?reason=expired';
-    } else {
-      window.location.href = './logout.html?reason=user';
-    }
+  getCurrentUser() {
+    return localStorage.getItem(this.STORAGE_KEY_USER) || 'Disha & Shivdattsinh';
   }
 
   getUserRole() {
+    const storedRole = localStorage.getItem('dishiv_auth_role');
+    if (storedRole) return storedRole;
+    
     const user = (this.getCurrentUser() || '').toLowerCase();
     if (user.includes('disha') || user.includes('owner') || user.includes('dishiv')) {
       return 'OWNER';
@@ -135,6 +120,21 @@ class DiShivAuthEngine {
 
   isOwner() {
     return this.getUserRole() === 'OWNER';
+  }
+
+  // Logout Current Session
+  logout(isExpired = false) {
+    localStorage.removeItem(this.STORAGE_KEY_USER);
+    localStorage.removeItem('dishiv_auth_role');
+    localStorage.removeItem(this.STORAGE_KEY_TOKEN);
+    localStorage.removeItem(this.STORAGE_KEY_EXPIRE);
+    sessionStorage.clear();
+
+    if (isExpired) {
+      window.location.href = './logout.html?reason=expired';
+    } else {
+      window.location.href = './logout.html?reason=user';
+    }
   }
 
   getDaysRemainingInSession() {
