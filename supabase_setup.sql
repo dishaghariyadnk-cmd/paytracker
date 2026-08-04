@@ -45,11 +45,38 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
     logged_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
+-- 4. Users Table (Database Authentication)
+CREATE TABLE IF NOT EXISTS public.users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    role VARCHAR(20) DEFAULT 'USER',
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 5. App Config Table (Permanent API Keys & Google Sheet URL)
+CREATE TABLE IF NOT EXISTS public.app_config (
+    config_key VARCHAR(100) PRIMARY KEY,
+    config_value TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- Pre-seed default couple accounts into Supabase DB (Password: 1234)
+INSERT INTO public.users (username, role, password_hash)
+VALUES 
+  ('dishiv', 'OWNER', 'fa6c770c670b80980df96e83d8a5a40b3c66f7d08b3e51bc3bf8974a689b91c1'),
+  ('shiv', 'USER', 'fa6c770c670b80980df96e83d8a5a40b3c66f7d08b3e51bc3bf8974a689b91c1')
+ON CONFLICT (username) DO NOTHING;
+
 -- Enable Public Anonymous Read/Write Access for Web App Sync
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ipo_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public read/write transactions" ON public.transactions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read/write ipo" ON public.ipo_applications FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public read/write audit" ON public.audit_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public read/write users" ON public.users FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow public read/write config" ON public.app_config FOR ALL USING (true) WITH CHECK (true);

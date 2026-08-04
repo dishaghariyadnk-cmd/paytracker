@@ -5,9 +5,13 @@ class PayTrackerApp {
     this.salary = parseFloat(localStorage.getItem('paytracker_salary')) || 0;
     this.transactions = JSON.parse(localStorage.getItem('paytracker_transactions')) || [];
     this.ipoList = JSON.parse(localStorage.getItem('paytracker_ipoList')) || [];
-    this.googleScriptUrl = localStorage.getItem('paytracker_googleScriptUrl') || '';
-    this.supabaseUrl = localStorage.getItem('paytracker_supabaseUrl') || '';
-    this.supabaseKey = localStorage.getItem('paytracker_supabaseKey') || '';
+    const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbx_Default/exec';
+    const DEFAULT_SUPABASE_URL = 'https://qhujytjjpgwovpzeierr.supabase.co';
+    const DEFAULT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFodWp5dGpqcGd3b3ZwemVpZXJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MjMxNzcsImV4cCI6MjEwMTM5OTE3N30.z5Gqh6YHQXK5GsAVNypfzBO3Gnz51mNNBno8vfvQ52s';
+
+    this.googleScriptUrl = localStorage.getItem('paytracker_googleScriptUrl') || DEFAULT_SHEET_URL;
+    this.supabaseUrl = localStorage.getItem('paytracker_supabaseUrl') || DEFAULT_SUPABASE_URL;
+    this.supabaseKey = localStorage.getItem('paytracker_supabaseKey') || DEFAULT_SUPABASE_KEY;
     this.offlineQueue = JSON.parse(localStorage.getItem('paytracker_offlineQueue')) || [];
 
     this.supabaseClient = null;
@@ -41,9 +45,34 @@ class PayTrackerApp {
     if (cleanUrl && cleanKey && typeof supabase !== 'undefined') {
       try {
         this.supabaseClient = supabase.createClient(cleanUrl, cleanKey);
+        this.fetchAppConfigFromSupabase();
       } catch (err) {
         console.warn('Supabase initialization failed:', err);
       }
+    }
+  }
+
+  async fetchAppConfigFromSupabase() {
+    if (!this.supabaseClient) return;
+    try {
+      const { data, error } = await this.supabaseClient.from('app_config').select('*').eq('config_key', 'google_sheet_url').single();
+      if (!error && data && data.config_value) {
+        this.googleScriptUrl = data.config_value;
+        localStorage.setItem('paytracker_googleScriptUrl', data.config_value);
+        const urlInput = document.getElementById('googleSheetScriptUrl');
+        if (urlInput) urlInput.value = data.config_value;
+      }
+    } catch (e) {
+      console.warn('App config fetch error:', e);
+    }
+  }
+
+  async saveAppConfigToSupabase(key, value) {
+    if (!this.supabaseClient) return;
+    try {
+      await this.supabaseClient.from('app_config').upsert([{ config_key: key, config_value: value, updated_at: new Date().toISOString() }]);
+    } catch (e) {
+      console.warn('App config upsert error:', e);
     }
   }
 
@@ -472,26 +501,29 @@ class PayTrackerApp {
       }
     });
 
-    // 2. Couple Comparison Chart (Disha vs Shivdattsinh Spending)
+    // 2. Dynamic Multi-User Spending Comparison Chart
     const ctxBar = document.getElementById('dailyBarChart').getContext('2d');
     if (this.barChart) this.barChart.destroy();
 
-    const dishaTotal = this.transactions
-      .filter(tx => (tx.loggedBy || '').toLowerCase().includes('disha') || (tx.loggedBy || '').toLowerCase().includes('owner'))
-      .reduce((sum, tx) => sum + tx.amount, 0);
+    // Group expenses dynamically by loggedBy user
+    const userTotals = {};
+    this.transactions.forEach(tx => {
+      const user = tx.loggedBy || 'Disha (Owner)';
+      userTotals[user] = (userTotals[user] || 0) + parseFloat(tx.amount || 0);
+    });
 
-    const shivTotal = this.transactions
-      .filter(tx => !(tx.loggedBy || '').toLowerCase().includes('disha') && !(tx.loggedBy || '').toLowerCase().includes('owner'))
-      .reduce((sum, tx) => sum + tx.amount, 0);
+    const userLabels = Object.keys(userTotals).length > 0 ? Object.keys(userTotals) : ['dishiv (Owner)', 'shiv (User)'];
+    const userAmounts = userLabels.map(u => userTotals[u] || 0);
+    const colorPalette = ['#ec4899', '#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#3b82f6'];
 
     this.barChart = new Chart(ctxBar, {
       type: 'bar',
       data: {
-        labels: ['Disha (Owner)', 'Shivdattsinh (User)'],
+        labels: userLabels,
         datasets: [{
-          label: 'Total Expenses This Month (₹)',
-          data: [dishaTotal, shivTotal],
-          backgroundColor: ['#ec4899', '#6366f1'],
+          label: 'Total Expenses Logged This Month (₹)',
+          data: userAmounts,
+          backgroundColor: userLabels.map((_, i) => colorPalette[i % colorPalette.length]),
           borderRadius: 8
         }]
       },
@@ -689,8 +721,9 @@ class PayTrackerApp {
     const url = document.getElementById('googleSheetScriptUrl').value.trim();
     this.googleScriptUrl = url;
     localStorage.setItem('paytracker_googleScriptUrl', url);
+    this.saveAppConfigToSupabase('google_sheet_url', url);
     this.checkSyncStatus();
-    alert('Google Apps Script Web App URL saved successfully!');
+    alert('Google Apps Script Web App URL saved successfully to Cloud DB & Local Storage!');
   }
 
   // --- 8:30 PM Daily Reminder System ---

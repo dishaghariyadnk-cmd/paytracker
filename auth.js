@@ -43,68 +43,103 @@ class DiShivAuthEngine {
     }
   }
 
-  // Register New Account
+  // Register New Account against Supabase DB
   async register(username, password, role = 'OWNER') {
-    const existingUsers = JSON.parse(localStorage.getItem('dishiv_registered_users') || '{}');
     const userKey = username.trim().toLowerCase();
+    const hashedPwd = await this.hashPassword(password);
 
-    if (existingUsers[userKey]) {
-      throw new Error('User account already exists! Please login.');
+    // 1. Try Supabase DB Insert
+    const subUrl = localStorage.getItem('paytracker_supabaseUrl');
+    const subKey = localStorage.getItem('paytracker_supabaseKey');
+    if (subUrl && subKey && typeof supabase !== 'undefined') {
+      try {
+        const client = supabase.createClient(subUrl, subKey);
+        const { data, error } = await client.from('users').insert([{
+          username: userKey,
+          role: role,
+          password_hash: hashedPwd
+        }]);
+        if (error && error.code === '23505') {
+          throw new Error('User account already exists in database! Please login.');
+        }
+      } catch (err) {
+        if (err.message && err.message.includes('already exists')) throw err;
+        console.warn('Supabase DB register fallback:', err);
+      }
     }
 
-    const hashedPwd = await this.hashPassword(password);
-    existingUsers[userKey] = {
-      username: username.trim(),
-      role: role,
-      passwordHash: hashedPwd,
-      created: new Date().toISOString()
-    };
-
+    // Local fallback save
+    let existingUsers = JSON.parse(localStorage.getItem('dishiv_registered_users') || '{}');
+    existingUsers[userKey] = { username: userKey, role: role, passwordHash: hashedPwd };
     localStorage.setItem('dishiv_registered_users', JSON.stringify(existingUsers));
+
     return this.login(username, password, role);
   }
 
-  // Login Existing Account & Create 15-Day Session
+  // Login Existing Account & Create 15-Day Session against Supabase DB
   async login(username, password, role = 'OWNER') {
-    const existingUsers = JSON.parse(localStorage.getItem('dishiv_registered_users') || '{}');
     const userKey = username.trim().toLowerCase();
-
-    // Default Seed user if no users registered yet
-    if (Object.keys(existingUsers).length === 0) {
-      const defaultHash = await this.hashPassword(password);
-      existingUsers[userKey] = {
-        username: username.trim(),
-        role: role,
-        passwordHash: defaultHash,
-        created: new Date().toISOString()
-      };
-      localStorage.setItem('dishiv_registered_users', JSON.stringify(existingUsers));
-    }
-
-    const userAccount = existingUsers[userKey];
-    if (!userAccount) {
-      throw new Error('User account not found! Check username or register.');
-    }
-
     const enteredHash = await this.hashPassword(password);
-    if (enteredHash !== userAccount.passwordHash) {
-      throw new Error('Incorrect password! Access denied.');
+    let authenticatedUser = null;
+
+    // 1. Query Supabase Cloud Database first
+    const subUrl = localStorage.getItem('paytracker_supabaseUrl');
+    const subKey = localStorage.getItem('paytracker_supabaseKey');
+    if (subUrl && subKey && typeof supabase !== 'undefined') {
+      try {
+        const client = supabase.createClient(subUrl, subKey);
+        const { data, error } = await client.from('users').select('*').eq('username', userKey).single();
+        
+        if (!error && data) {
+          if (data.password_hash === enteredHash) {
+            authenticatedUser = { username: data.username, role: data.role };
+          } else {
+            throw new Error('Incorrect password! Access denied.');
+          }
+        }
+      } catch (err) {
+        if (err.message && err.message.includes('Incorrect password')) throw err;
+        console.warn('Supabase DB auth query fallback:', err);
+      }
+    }
+
+    // 2. Local fallback check if DB query didn't return or DB unreachable
+    if (!authenticatedUser) {
+      let existingUsers = JSON.parse(localStorage.getItem('dishiv_registered_users') || '{}');
+      
+      // Seed defaults
+      if (userKey === 'dishiv' || userKey === 'shiv') {
+        const defaultHash = await this.hashPassword('1234');
+        const defaultRole = userKey === 'dishiv' ? 'OWNER' : 'USER';
+        if (enteredHash === defaultHash) {
+          authenticatedUser = { username: userKey, role: defaultRole };
+        }
+      } else if (existingUsers[userKey]) {
+        if (existingUsers[userKey].passwordHash === enteredHash) {
+          authenticatedUser = { username: userKey, role: existingUsers[userKey].role || role };
+        } else {
+          throw new Error('Incorrect password! Access denied.');
+        }
+      }
+    }
+
+    if (!authenticatedUser) {
+      throw new Error('User account not found! Use "dishiv" or "shiv" (Password: 1234).');
     }
 
     // Auth Successful! Issue 15-day token
     const token = 'DS-JWT-' + Math.random().toString(36).substring(2) + '-' + Date.now();
     const expireTime = Date.now() + this.FIFTEEN_DAYS_MS;
 
-    const userRole = userAccount.role || role;
-    localStorage.setItem(this.STORAGE_KEY_USER, userAccount.username);
-    localStorage.setItem('dishiv_auth_role', userRole);
+    localStorage.setItem(this.STORAGE_KEY_USER, authenticatedUser.username);
+    localStorage.setItem('dishiv_auth_role', authenticatedUser.role);
     localStorage.setItem(this.STORAGE_KEY_TOKEN, token);
     localStorage.setItem(this.STORAGE_KEY_EXPIRE, expireTime.toString());
 
     // Record Login Device Audit Log
-    this.recordAuditLog(userAccount.username, userRole, 'USER_LOGIN');
+    this.recordAuditLog(authenticatedUser.username, authenticatedUser.role, 'USER_LOGIN');
 
-    return { user: userAccount.username, role: userRole, token, expireTime };
+    return { user: authenticatedUser.username, role: authenticatedUser.role, token, expireTime };
   }
 
   // Record Audit Event to Supabase & LocalStorage
