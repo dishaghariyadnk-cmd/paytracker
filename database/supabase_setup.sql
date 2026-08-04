@@ -73,8 +73,8 @@ CREATE TABLE IF NOT EXISTS public.app_config (
 -- Pre-seed default couple accounts into Supabase DB (Password: 1234)
 INSERT INTO public.users (username, role, password_hash)
 VALUES 
-  ('dishiv', 'OWNER', 'fa6c770c670b80980df96e83d8a5a40b3c66f7d08b3e51bc3bf8974a689b91c1'),
-  ('shiv', 'USER', 'fa6c770c670b80980df96e83d8a5a40b3c66f7d08b3e51bc3bf8974a689b91c1')
+  ('dishiv', 'OWNER', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'),
+  ('shiv', 'USER', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4')
 ON CONFLICT (username) DO NOTHING;
 
 -- Enable Public Anonymous Read/Write Access for Web App Sync

@@ -1,9 +1,5 @@
 // DiShiv Auth Engine Wrapper (Delegates to modular AuthService)
 class DiShivAuthEngine {
-  constructor() {
-    this.FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
-  }
-
   async hashPassword(password) {
     return authService.hashPassword(password);
   }

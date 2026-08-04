@@ -20,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve Static Frontend Assets
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 // Health check endpoint
 app.get('/api/v1/health', (req, res) => {

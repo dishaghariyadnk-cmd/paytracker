@@ -1,4 +1,4 @@
-const CACHE_NAME = 'paytracker-v3';
+const CACHE_NAME = 'paytracker-v5';
 const ASSETS = [
   './',
   './index.html',

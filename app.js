@@ -1,4 +1,4 @@
-// Main DiShiv PayTracker Orchestrator (100% Dynamic REST API Driven)
+// Main DiShiv PayTracker Orchestrator (100% Dynamic REST API Driven for GitHub Pages)
 class PayTrackerApp {
   constructor() {
     this.selectedCategory = 'Groceries';
@@ -6,6 +6,10 @@ class PayTrackerApp {
     this.transactions = [];
     this.ipoList = [];
     this.googleScriptUrl = '';
+
+    // Direct Supabase Cloud REST API Endpoint for GitHub Pages
+    this.supabaseUrl = localStorage.getItem('paytracker_supabaseUrl') || 'https://qhujytjjpgwovpzeierr.supabase.co';
+    this.supabaseKey = localStorage.getItem('paytracker_supabaseKey') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFodWp5dGpqcGd3b3ZwemVpZXJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4MjMxNzcsImV4cCI6MjEwMTM5OTE3N30.z5Gqh6YHQXK5GsAVNypfzBO3Gnz51mNNBno8vfvQ52s';
 
     this.pieChart = null;
     this.barChart = null;
