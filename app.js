@@ -6,12 +6,27 @@ class PayTrackerApp {
     this.transactions = JSON.parse(localStorage.getItem('paytracker_transactions')) || [];
     this.ipoList = JSON.parse(localStorage.getItem('paytracker_ipoList')) || [];
     this.googleScriptUrl = localStorage.getItem('paytracker_googleScriptUrl') || '';
+    this.supabaseUrl = localStorage.getItem('paytracker_supabaseUrl') || '';
+    this.supabaseKey = localStorage.getItem('paytracker_supabaseKey') || '';
     this.offlineQueue = JSON.parse(localStorage.getItem('paytracker_offlineQueue')) || [];
+
+    this.supabaseClient = null;
+    this.initSupabaseClient();
 
     this.pieChart = null;
     this.barChart = null;
 
     this.init();
+  }
+
+  initSupabaseClient() {
+    if (this.supabaseUrl && this.supabaseKey && typeof supabase !== 'undefined') {
+      try {
+        this.supabaseClient = supabase.createClient(this.supabaseUrl, this.supabaseKey);
+      } catch (err) {
+        console.warn('Supabase initialization failed:', err);
+      }
+    }
   }
 
   // --- Cryptographic SHA-256 Hashing ---
@@ -53,7 +68,15 @@ class PayTrackerApp {
 
   // --- Metrics Calculation ---
   renderHeaderAndMetrics() {
-    document.getElementById('salaryDisplay').innerText = `₹${this.salary.toLocaleString('en-IN')}`;
+    // Display active logged-in user & role badge
+    if (typeof auth !== 'undefined') {
+      const currentUser = auth.getCurrentUser();
+      const currentRole = auth.isOwner() ? '👑 Owner' : '👤 User';
+      const userSubEl = document.getElementById('userProfileSub');
+      if (userSubEl) {
+        userSubEl.innerHTML = `Logged in as: <strong>${currentUser}</strong> (${currentRole})`;
+      }
+    }
 
     // Calculate total spent (excluding IPO blocked/refunded, only active expenses)
     const totalSpent = this.transactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
@@ -150,8 +173,28 @@ class PayTrackerApp {
     this.renderHeaderAndMetrics();
     this.renderHistory();
 
-    // Trigger Google Sheet Sync
+    // Trigger Google Sheet Sync & Supabase Cloud DB Sync
     await this.syncTransactionToSheet(newTx);
+    await this.saveTransactionToSupabase(newTx);
+  }
+
+  async saveTransactionToSupabase(txItem) {
+    if (!this.supabaseClient) return;
+    try {
+      await this.supabaseClient.from('transactions').insert([{
+        id: txItem.id,
+        datetime: txItem.datetime,
+        type: txItem.type,
+        category: txItem.category,
+        amount: txItem.amount,
+        payment_method: txItem.paymentMethod,
+        notes: txItem.notes,
+        logged_by: txItem.loggedBy,
+        status: txItem.status
+      }]);
+    } catch (err) {
+      console.warn('Supabase transaction insert error:', err);
+    }
   }
 
   // --- Google Sheet Syncing ---
@@ -488,12 +531,20 @@ class PayTrackerApp {
     const urlInput = document.getElementById('googleSheetScriptUrl');
     urlInput.value = this.googleScriptUrl;
 
+    const subUrlInput = document.getElementById('supabaseUrlInput');
+    const subKeyInput = document.getElementById('supabaseKeyInput');
+    if (subUrlInput) subUrlInput.value = this.supabaseUrl;
+    if (subKeyInput) subKeyInput.value = this.supabaseKey;
+
     if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
       // USER Role Restrictions: Cannot unlink or edit sheet settings
       urlInput.disabled = true;
       urlInput.placeholder = '🔒 Linked by Owner (Disha)';
-      const saveBtn = document.querySelector('#settingsTab .primary-btn');
-      if (saveBtn) saveBtn.style.display = 'none';
+      if (subUrlInput) subUrlInput.disabled = true;
+      if (subKeyInput) subKeyInput.disabled = true;
+
+      const saveBtns = document.querySelectorAll('#settingsTab .primary-btn');
+      saveBtns.forEach(btn => btn.style.display = 'none');
     }
 
     fetch('./google_apps_script.js')
@@ -507,6 +558,48 @@ class PayTrackerApp {
 
     // Schedule 8:30 PM Evening Reminder
     this.scheduleEveningReminder();
+  }
+
+  saveSupabaseSettings() {
+    if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
+      alert('🔒 Access Restricted: Only Owner (Disha) can modify Supabase Cloud DB settings!');
+      return;
+    }
+    const url = document.getElementById('supabaseUrlInput').value.trim();
+    const key = document.getElementById('supabaseKeyInput').value.trim();
+
+    this.supabaseUrl = url;
+    this.supabaseKey = key;
+
+    localStorage.setItem('paytracker_supabaseUrl', url);
+    localStorage.setItem('paytracker_supabaseKey', key);
+
+    this.initSupabaseClient();
+    alert('🎉 Supabase Cloud PostgreSQL DB settings saved successfully!');
+  }
+
+  async testSupabaseConnection() {
+    if (!this.supabaseUrl || !this.supabaseKey) {
+      alert('Please enter your Supabase Project URL and Anon Key first!');
+      return;
+    }
+
+    try {
+      this.initSupabaseClient();
+      if (!this.supabaseClient) {
+        alert('Supabase client could not be initialized. Check console for details.');
+        return;
+      }
+
+      const { data, error } = await this.supabaseClient.from('transactions').select('id').limit(1);
+      if (error) {
+        alert('Supabase Connection Error: ' + error.message + '\nMake sure you executed the SQL setup script in Supabase SQL Editor!');
+      } else {
+        alert('🎉 Supabase Connection Successful! Connected to 24/7 Cloud DB!');
+      }
+    } catch (err) {
+      alert('Connection failed: ' + err.toString());
+    }
   }
 
   saveSettings() {

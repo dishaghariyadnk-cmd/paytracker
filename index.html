@@ -25,6 +25,9 @@
   <!-- Chart.js for Visual Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Supabase JS Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <!-- Auth Engine & Authorization Guard -->
   <script src="auth.js?v=2"></script>
   <script>
@@ -751,7 +754,7 @@
         </div>
         <div>
           <h1>DiShiv PayTracker</h1>
-          <p class="subtitle">Disha & Shivdattsinh Vault</p>
+          <p class="subtitle" id="userProfileSub">Loading user...</p>
         </div>
       </div>
       <div class="header-actions">
@@ -985,6 +988,31 @@
 
     <!-- TAB 4: SETTINGS & GOOGLE SHEET SYNC TAB -->
     <main id="settingsTab" class="tab-content hidden">
+      <!-- Supabase Cloud DB Card -->
+      <section class="section-card">
+        <h2 class="section-title"><i class="fa-solid fa-database"></i> Supabase Cloud PostgreSQL Database</h2>
+        <p class="section-desc">Connect 24/7 Cloud DB for anywhere access outside office (5G/4G/Wi-Fi)</p>
+
+        <div class="form-group">
+          <label>Supabase Project URL</label>
+          <input type="url" id="supabaseUrlInput" placeholder="https://xyz.supabase.co">
+        </div>
+
+        <div class="form-group">
+          <label>Supabase Anon Public Key</label>
+          <input type="text" id="supabaseKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
+        </div>
+
+        <div class="btn-group">
+          <button class="primary-btn" onclick="app.saveSupabaseSettings()">
+            <i class="fa-solid fa-floppy-disk"></i> Save Supabase Cloud DB
+          </button>
+          <button class="secondary-btn" onclick="app.testSupabaseConnection()">
+            <i class="fa-solid fa-plug"></i> Test DB Connection
+          </button>
+        </div>
+      </section>
+
       <section class="section-card">
         <h2 class="section-title"><i class="fa-solid fa-file-excel"></i> Google Sheet Live Sync Setup</h2>
         <p class="section-desc">Connect your Web App directly to your Google Sheet (`1bfNMmLVRhPTvibBlHYiAP_Wx4zssbUDiZBuyGCW8RNA`)</p>
