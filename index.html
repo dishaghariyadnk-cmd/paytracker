@@ -1069,6 +1069,23 @@
         </ol>
       </section>
 
+      <!-- Owner Security & Login Audit Card -->
+      <section class="section-card" id="ownerAuditSection">
+        <div class="history-header">
+          <div>
+            <h2 class="section-title"><i class="fa-solid fa-user-shield"></i> Login & Device Audit History</h2>
+            <p class="subtitle">Track who logged in, date/time & device info (Owner Only)</p>
+          </div>
+          <button class="secondary-btn" onclick="app.loadAuditLogs()">
+            <i class="fa-solid fa-rotate"></i> Refresh Logs
+          </button>
+        </div>
+
+        <div id="auditLogsList" class="history-list">
+          <div class="empty-state">Loading audit logs...</div>
+        </div>
+      </section>
+
       <section class="section-card danger-zone">
         <h2 class="section-title"><i class="fa-solid fa-database"></i> Data Management</h2>
         <div class="btn-group">

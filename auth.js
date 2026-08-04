@@ -95,12 +95,49 @@ class DiShivAuthEngine {
     const token = 'DS-JWT-' + Math.random().toString(36).substring(2) + '-' + Date.now();
     const expireTime = Date.now() + this.FIFTEEN_DAYS_MS;
 
+    const userRole = userAccount.role || role;
     localStorage.setItem(this.STORAGE_KEY_USER, userAccount.username);
-    localStorage.setItem('dishiv_auth_role', userAccount.role || role);
+    localStorage.setItem('dishiv_auth_role', userRole);
     localStorage.setItem(this.STORAGE_KEY_TOKEN, token);
     localStorage.setItem(this.STORAGE_KEY_EXPIRE, expireTime.toString());
 
-    return { user: userAccount.username, role: userAccount.role || role, token, expireTime };
+    // Record Login Device Audit Log
+    this.recordAuditLog(userAccount.username, userRole, 'USER_LOGIN');
+
+    return { user: userAccount.username, role: userRole, token, expireTime };
+  }
+
+  // Record Audit Event to Supabase & LocalStorage
+  async recordAuditLog(username, role, action) {
+    const userAgent = navigator.userAgent || 'Unknown Browser';
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
+    const deviceType = isMobile ? (navigator.platform || 'Mobile Device') : 'Desktop PC';
+
+    const logEntry = {
+      username: username,
+      role: role,
+      action: action,
+      user_agent: userAgent,
+      device_type: deviceType,
+      logged_at: new Date().toISOString()
+    };
+
+    // Save to local logs cache
+    const existingLogs = JSON.parse(localStorage.getItem('dishiv_audit_logs') || '[]');
+    existingLogs.unshift(logEntry);
+    localStorage.setItem('dishiv_audit_logs', JSON.stringify(existingLogs.slice(0, 50)));
+
+    // Send to Supabase if configured
+    const subUrl = localStorage.getItem('paytracker_supabaseUrl');
+    const subKey = localStorage.getItem('paytracker_supabaseKey');
+    if (subUrl && subKey && typeof supabase !== 'undefined') {
+      try {
+        const client = supabase.createClient(subUrl, subKey);
+        await client.from('audit_logs').insert([logEntry]);
+      } catch (err) {
+        console.warn('Audit log sync error:', err);
+      }
+    }
   }
 
   getCurrentUser() {
@@ -124,6 +161,10 @@ class DiShivAuthEngine {
 
   // Logout Current Session
   logout(isExpired = false) {
+    const user = this.getCurrentUser();
+    const role = this.getUserRole();
+    this.recordAuditLog(user, role, isExpired ? 'SESSION_EXPIRED_LOGOUT' : 'USER_MANUAL_LOGOUT');
+
     localStorage.removeItem(this.STORAGE_KEY_USER);
     localStorage.removeItem('dishiv_auth_role');
     localStorage.removeItem(this.STORAGE_KEY_TOKEN);

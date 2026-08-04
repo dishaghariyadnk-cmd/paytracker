@@ -576,6 +576,64 @@ class PayTrackerApp {
 
     // Schedule 8:30 PM Evening Reminder
     this.scheduleEveningReminder();
+
+    // Load Owner Audit Logs if Owner
+    this.loadAuditLogs();
+  }
+
+  async loadAuditLogs() {
+    const auditSection = document.getElementById('ownerAuditSection');
+    const auditList = document.getElementById('auditLogsList');
+
+    if (typeof auth !== 'undefined' && !auth.isOwner()) {
+      if (auditSection) auditSection.style.display = 'none';
+      return;
+    }
+
+    if (auditSection) auditSection.style.display = 'flex';
+
+    let logs = [];
+    if (this.supabaseClient) {
+      try {
+        const { data, error } = await this.supabaseClient
+          .from('audit_logs')
+          .select('*')
+          .order('logged_at', { ascending: false })
+          .limit(30);
+
+        if (!error && data) logs = data;
+      } catch (e) {
+        console.warn('Could not fetch Supabase audit logs:', e);
+      }
+    }
+
+    if (logs.length === 0) {
+      logs = JSON.parse(localStorage.getItem('dishiv_audit_logs') || '[]');
+    }
+
+    if (logs.length === 0) {
+      if (auditList) auditList.innerHTML = `<div class="empty-state">No audit logs recorded yet.</div>`;
+      return;
+    }
+
+    if (auditList) {
+      auditList.innerHTML = logs.map(log => `
+        <div class="tx-item">
+          <div class="tx-left">
+            <div class="tx-icon">${log.action === 'USER_LOGIN' ? '🔐' : '🔑'}</div>
+            <div class="tx-details">
+              <h4>${log.username} (${log.role || 'USER'})</h4>
+              <div class="tx-meta">
+                <span>${new Date(log.logged_at).toLocaleString('en-IN')}</span> • <span>${log.device_type || 'Device'}</span>
+              </div>
+            </div>
+          </div>
+          <div class="tx-right">
+            <span class="status-badge ${log.action === 'USER_LOGIN' ? 'allotted' : 'refunded'}">${log.action}</span>
+          </div>
+        </div>
+      `).join('');
+    }
   }
 
   saveSupabaseSettings() {
