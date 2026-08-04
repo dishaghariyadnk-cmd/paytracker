@@ -694,6 +694,25 @@ class PayTrackerApp {
   }
 
   // --- 8:30 PM Daily Reminder System ---
+  triggerTestNotification() {
+    if (!('Notification' in window)) {
+      alert('⚠️ Web Notifications are not supported in your current browser!');
+      return;
+    }
+
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+        new Notification('🔔 DiShiv PayTracker Reminder (Test Success)', {
+          body: 'Did you make any GPay, PhonePe or Paytm payment today? Tap to record it in 2 seconds!',
+          icon: 'https://cdn-icons-png.flaticon.com/512/2845/2845722.png'
+        });
+        alert('🎉 Test Notification Triggered! Check your mobile/screen notification bar!');
+      } else {
+        alert('⚠️ Notification permission was blocked/denied! Please allow notifications in your browser site settings.');
+      }
+    });
+  }
+
   scheduleEveningReminder() {
     if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
       Notification.requestPermission();
