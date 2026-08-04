@@ -19,10 +19,28 @@ class PayTrackerApp {
     this.init();
   }
 
+  sanitizeSupabaseUrl(url) {
+    if (!url) return '';
+    let cleanUrl = url.trim();
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      cleanUrl = 'https://' + cleanUrl;
+    }
+    try {
+      const parsed = new URL(cleanUrl);
+      cleanUrl = parsed.origin;
+    } catch (e) {
+      cleanUrl = cleanUrl.replace(/\/+$/, '');
+    }
+    return cleanUrl;
+  }
+
   initSupabaseClient() {
-    if (this.supabaseUrl && this.supabaseKey && typeof supabase !== 'undefined') {
+    const cleanUrl = this.sanitizeSupabaseUrl(this.supabaseUrl);
+    const cleanKey = (this.supabaseKey || '').trim();
+
+    if (cleanUrl && cleanKey && typeof supabase !== 'undefined') {
       try {
-        this.supabaseClient = supabase.createClient(this.supabaseUrl, this.supabaseKey);
+        this.supabaseClient = supabase.createClient(cleanUrl, cleanKey);
       } catch (err) {
         console.warn('Supabase initialization failed:', err);
       }
@@ -565,13 +583,16 @@ class PayTrackerApp {
       alert('🔒 Access Restricted: Only Owner (Disha) can modify Supabase Cloud DB settings!');
       return;
     }
-    const url = document.getElementById('supabaseUrlInput').value.trim();
+    const rawUrl = document.getElementById('supabaseUrlInput').value.trim();
     const key = document.getElementById('supabaseKeyInput').value.trim();
 
-    this.supabaseUrl = url;
+    const cleanUrl = this.sanitizeSupabaseUrl(rawUrl);
+    document.getElementById('supabaseUrlInput').value = cleanUrl;
+
+    this.supabaseUrl = cleanUrl;
     this.supabaseKey = key;
 
-    localStorage.setItem('paytracker_supabaseUrl', url);
+    localStorage.setItem('paytracker_supabaseUrl', cleanUrl);
     localStorage.setItem('paytracker_supabaseKey', key);
 
     this.initSupabaseClient();
