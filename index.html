@@ -25,15 +25,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Modular Services -->
-  <script src="src/config/database.js?v=5"></script>
-  <script src="src/services/audit.service.js?v=5"></script>
-  <script src="src/services/auth.service.js?v=5"></script>
-  <script src="src/services/transaction.service.js?v=5"></script>
-  <script src="src/services/ipo.service.js?v=5"></script>
-  <script src="src/services/budget.service.js?v=5"></script>
+  <script src="src/config/database.js?v=6"></script>
+  <script src="src/services/audit.service.js?v=6"></script>
+  <script src="src/services/auth.service.js?v=6"></script>
+  <script src="src/services/transaction.service.js?v=6"></script>
+  <script src="src/services/ipo.service.js?v=6"></script>
+  <script src="src/services/budget.service.js?v=6"></script>
 
   <!-- Auth Engine & Authorization Guard -->
-  <script src="auth.js?v=5"></script>
+  <script src="auth.js?v=6"></script>
   <script>
     auth.requireAuth();
   </script>
@@ -302,12 +302,12 @@
         </div>
       </section>
 
-      <!-- Owner Security & Login Audit Card -->
+      <!-- Security & Login Audit Card -->
       <section class="section-card" id="ownerAuditSection">
         <div class="history-header">
           <div>
             <h2 class="section-title"><i class="fa-solid fa-user-shield"></i> Login & Device Audit History</h2>
-            <p class="subtitle">Track who logged in, date/time & device info (Owner Only)</p>
+            <p class="subtitle">Track who logged in, date/time & device info</p>
           </div>
           <button class="secondary-btn" onclick="app.loadAuditLogs()">
             <i class="fa-solid fa-rotate"></i> Refresh Logs
@@ -351,6 +351,6 @@
   </div>
 
   <!-- App Orchestrator -->
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
