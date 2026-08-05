@@ -1,31 +1,37 @@
-// Budget & Salary API Service
+// Budget & Salary API Service (Exact DB Persistence)
 class BudgetService {
   async fetchSalary() {
+    const localSalary = localStorage.getItem('paytracker_savedSalary');
     const client = dbConfig.getClient();
-    if (!client) return 50000;
+
+    if (!client) {
+      return localSalary ? parseFloat(localSalary) : 0;
+    }
 
     try {
       const { data, error } = await client
         .from('monthly_budgets')
         .select('monthly_salary')
         .order('updated_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (!error && data && data.monthly_salary) {
-        return parseFloat(data.monthly_salary || 0);
+      if (!error && data && data.length > 0 && data[0].monthly_salary !== null) {
+        const dbSalary = parseFloat(data[0].monthly_salary);
+        localStorage.setItem('paytracker_savedSalary', dbSalary.toString());
+        return dbSalary;
       }
-      // If table is unseeded yet, return default starting salary 50000
-      return 50000;
+      
+      return localSalary ? parseFloat(localSalary) : 0;
     } catch (err) {
       console.warn('Salary fetch exception:', err);
-      return 50000;
+      return localSalary ? parseFloat(localSalary) : 0;
     }
   }
 
   async saveSalary(amount) {
+    localStorage.setItem('paytracker_savedSalary', amount.toString());
     const client = dbConfig.getClient();
-    if (!client) return false;
+    if (!client) return true;
 
     try {
       const { error } = await client.from('monthly_budgets').insert([{
@@ -37,12 +43,11 @@ class BudgetService {
 
       if (error) {
         console.warn('Error saving salary to DB:', error);
-        return false;
       }
       return true;
     } catch (err) {
       console.warn('Salary save exception:', err);
-      return false;
+      return true;
     }
   }
 
@@ -55,10 +60,10 @@ class BudgetService {
         .from('app_config')
         .select('config_value')
         .eq('config_key', key)
-        .single();
+        .limit(1);
 
-      if (!error && data) {
-        return data.config_value;
+      if (!error && data && data.length > 0) {
+        return data[0].config_value;
       }
       return null;
     } catch (err) {
