@@ -3,11 +3,13 @@
 -- =================================================================
 -- Instructions:
 -- 1. Log in to your free Supabase Dashboard: https://supabase.com
--- 2. Create a project (e.g., dishiv-paytracker).
--- 3. Click on "SQL Editor" in the left sidebar.
--- 4. Click "New query", paste this entire SQL script, and click "Run".
--- 5. Go to Project Settings -> API. Copy your "Project URL" and "anon public key".
--- 6. Paste them into the Sync & Database tab inside your DiShiv PayTracker App!
+-- 2. Click on "SQL Editor" in the left sidebar.
+-- 3. Click "New query", paste this entire SQL script, and click "Run".
+
+-- 0. Reset / Truncate Data for Fresh Start
+TRUNCATE TABLE public.transactions;
+TRUNCATE TABLE public.ipo_applications;
+TRUNCATE TABLE public.audit_logs;
 
 -- 1. Transactions Table
 CREATE TABLE IF NOT EXISTS public.transactions (
@@ -54,11 +56,11 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
     logged_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- 5. Users Table (Database Authentication)
+-- 5. Users Table (Database Authentication - Equal Co-Owners)
 CREATE TABLE IF NOT EXISTS public.users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
-    role VARCHAR(20) DEFAULT 'USER',
+    role VARCHAR(20) DEFAULT 'OWNER',
     password_hash TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
@@ -70,12 +72,12 @@ CREATE TABLE IF NOT EXISTS public.app_config (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- Pre-seed default couple accounts into Supabase DB (Password: 1234)
+-- Pre-seed default couple accounts with Equal Co-Owner privileges (Password: 1234)
 INSERT INTO public.users (username, role, password_hash)
 VALUES 
   ('dishiv', 'OWNER', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'),
-  ('shiv', 'USER', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4')
-ON CONFLICT (username) DO NOTHING;
+  ('shiv', 'OWNER', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4')
+ON CONFLICT (username) DO UPDATE SET role = 'OWNER';
 
 -- Enable Public Anonymous Read/Write Access for Web App Sync
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;

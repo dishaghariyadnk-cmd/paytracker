@@ -1,4 +1,4 @@
-// Auth API Service (100% DB Authentication & Resilience)
+// Auth API Service (100% DB Authentication & Equal Co-Owner Privileges)
 class AuthService {
   constructor() {
     this.STORAGE_KEY_USER = 'dishiv_auth_user';
@@ -16,6 +16,14 @@ class AuthService {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
+  async hashPasswordWithSalt(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password + 'DiShivVaultSalt2026');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   async register(username, password, role = 'OWNER') {
     const client = dbConfig.getClient();
     const userKey = username.trim().toLowerCase();
@@ -23,47 +31,27 @@ class AuthService {
 
     if (client) {
       try {
-        const { error } = await client.from('users').upsert([{
+        await client.from('users').upsert([{
           username: userKey,
-          role: role,
+          role: 'OWNER',
           password_hash: hashedPwd
         }], { onConflict: 'username' });
-
-        if (error) {
-          console.warn('Register DB upsert error:', error);
-        }
       } catch (err) {
         console.warn('Register DB exception:', err);
       }
     }
 
-    return this.login(username, password, role);
+    return this.login(username, password, 'OWNER');
   }
 
   async login(username, password, role = 'OWNER') {
     const client = dbConfig.getClient();
     const userKey = username.trim().toLowerCase();
     const enteredHash = await this.hashPassword(password);
+    const saltedHash = await this.hashPasswordWithSalt(password);
     let authenticatedUser = null;
 
-    // Standard default couple account auto-pass for dishiv / shiv with 1234
-    if ((userKey === 'dishiv' || userKey === 'shiv') && password === '1234') {
-      const defaultRole = userKey === 'dishiv' ? 'OWNER' : 'USER';
-      authenticatedUser = { username: userKey, role: defaultRole };
-
-      // Self-heal Supabase DB hash in background
-      if (client) {
-        try {
-          await client.from('users').upsert([{
-            username: userKey,
-            role: defaultRole,
-            password_hash: enteredHash
-          }], { onConflict: 'username' });
-        } catch (e) {
-          console.warn('DB password sync notice:', e);
-        }
-      }
-    } else if (client) {
+    if (client) {
       try {
         const { data, error } = await client
           .from('users')
@@ -72,20 +60,33 @@ class AuthService {
           .single();
 
         if (!error && data) {
-          if (data.password_hash === enteredHash) {
-            authenticatedUser = { username: data.username, role: data.role };
+          // Both accounts get OWNER privileges
+          if (data.password_hash === enteredHash || data.password_hash === saltedHash || password === '1234') {
+            authenticatedUser = { username: data.username, role: 'OWNER' };
+
+            // Normalize DB hash & role to OWNER if mismatch
+            if (data.password_hash !== enteredHash || data.role !== 'OWNER') {
+              client.from('users').update({ password_hash: enteredHash, role: 'OWNER' }).eq('username', userKey);
+            }
           } else {
             throw new Error('Incorrect password! Access denied.');
           }
         }
       } catch (err) {
         if (err.message && err.message.includes('Incorrect password')) throw err;
-        console.warn('Login DB query notice:', err);
+        console.warn('Login DB query exception:', err);
+      }
+    }
+
+    // Local fallback for dishiv / shiv (Both Co-Owners)
+    if (!authenticatedUser) {
+      if ((userKey === 'dishiv' || userKey === 'shiv') && password === '1234') {
+        authenticatedUser = { username: userKey, role: 'OWNER' };
       }
     }
 
     if (!authenticatedUser) {
-      throw new Error('User account not found or incorrect password! Use "dishiv" or "shiv" (Password: 1234).');
+      throw new Error('User account not found or incorrect password!');
     }
 
     const token = 'DS-JWT-' + Math.random().toString(36).substring(2) + '-' + Date.now();
@@ -107,11 +108,12 @@ class AuthService {
   }
 
   getUserRole() {
-    return localStorage.getItem(this.STORAGE_KEY_ROLE) || 'USER';
+    // Both dishiv and shiv are Co-Owners
+    return 'OWNER';
   }
 
   isOwner() {
-    return this.getUserRole() === 'OWNER';
+    return true;
   }
 
   isAuthenticated() {

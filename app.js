@@ -70,13 +70,13 @@ class PayTrackerApp {
 
   // --- Metrics Calculation ---
   renderHeaderAndMetrics() {
-    // Display active logged-in user & role badge
+    // Display active logged-in user & role badge (Both Disha & Shivdattsinh are Co-Owners)
     if (typeof auth !== 'undefined') {
       const currentUser = auth.getCurrentUser();
-      const currentRole = auth.isOwner() ? '👑 Owner' : '👤 User';
+      const userDisplay = currentUser.toLowerCase() === 'shiv' ? '⚡ Shivdattsinh' : '🌸 Disha';
       const userSubEl = document.getElementById('userProfileSub');
       if (userSubEl) {
-        userSubEl.innerHTML = `Logged in as: <strong>${currentUser}</strong> (${currentRole})`;
+        userSubEl.innerHTML = `Logged in as: <strong>${userDisplay}</strong> (👑 Co-Owner Vault Admin)`;
       }
     }
 
@@ -116,7 +116,7 @@ class PayTrackerApp {
     if (!listContainer) return;
 
     if (this.transactions.length === 0) {
-      listContainer.innerHTML = `<div class="empty-state">No payment entries recorded yet.</div>`;
+      listContainer.innerHTML = `<div class="empty-state">No payment entries recorded yet. Tap "Record Payment Entry" above to add your first entry!</div>`;
       return;
     }
 
@@ -133,26 +133,36 @@ class PayTrackerApp {
       'General / Other': '💸'
     };
 
-    listContainer.innerHTML = this.transactions.map(tx => `
-      <div class="tx-item">
-        <div class="tx-left">
-          <div class="tx-icon">${iconMap[tx.category] || '💸'}</div>
-          <div class="tx-details">
-            <h4>${tx.category}</h4>
-            <div class="tx-meta">
-              <span>${tx.datetime}</span> • <span>${tx.paymentMethod}</span> ${tx.notes ? `• <em>${tx.notes}</em>` : ''}
-              ${tx.loggedBy ? ` • <span style="color: #6366f1;">${tx.loggedBy}</span>` : ''}
+    listContainer.innerHTML = this.transactions.map(tx => {
+      const loggedUserStr = (tx.loggedBy || '').toLowerCase();
+      const isDisha = loggedUserStr.indexOf('dish') !== -1 || loggedUserStr.indexOf('owner') !== -1;
+      const isShiv = loggedUserStr.indexOf('shiv') !== -1;
+
+      const rowClass = isDisha ? 'user-disha' : (isShiv ? 'user-shiv' : '');
+      const badgeHtml = isDisha 
+        ? `<span class="user-badge user-badge-disha">🌸 Disha</span>`
+        : (isShiv ? `<span class="user-badge user-badge-shiv">⚡ Shivdattsinh</span>` : `<span class="user-badge">${tx.loggedBy || 'User'}</span>`);
+
+      return `
+        <div class="tx-item ${rowClass}">
+          <div class="tx-left">
+            <div class="tx-icon">${iconMap[tx.category] || '💸'}</div>
+            <div class="tx-details">
+              <h4>${tx.category} ${badgeHtml}</h4>
+              <div class="tx-meta">
+                <span>${tx.datetime}</span> • <span>${tx.paymentMethod}</span> ${tx.notes ? `• <em>${tx.notes}</em>` : ''}
+              </div>
             </div>
           </div>
+          <div class="tx-right">
+            <div class="tx-amount">- ₹${tx.amount.toLocaleString('en-IN')}</div>
+            <button class="delete-tx-btn" onclick="app.deleteTransaction('${tx.id}')" title="Delete Entry">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
         </div>
-        <div class="tx-right">
-          <div class="tx-amount">- ₹${tx.amount.toLocaleString('en-IN')}</div>
-          <button class="delete-tx-btn" onclick="app.deleteTransaction('${tx.id}')" title="Delete Entry">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   // --- Add Transaction ---
@@ -167,7 +177,8 @@ class PayTrackerApp {
       return;
     }
 
-    const currentUser = (typeof auth !== 'undefined') ? auth.getCurrentUser() : 'Disha';
+    const currentRawUser = (typeof auth !== 'undefined') ? auth.getCurrentUser() : 'dishiv';
+    const currentUserDisplay = currentRawUser.toLowerCase() === 'shiv' ? 'Shivdattsinh' : 'Disha';
 
     const newTx = {
       id: 'TX-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
@@ -177,7 +188,7 @@ class PayTrackerApp {
       amount: amount,
       paymentMethod: methodSelect.value,
       notes: notesInput.value.trim(),
-      loggedBy: currentUser,
+      loggedBy: currentUserDisplay,
       status: 'Completed'
     };
 
@@ -193,7 +204,7 @@ class PayTrackerApp {
     this.renderHeaderAndMetrics();
     this.renderHistory();
 
-    // Trigger Google Sheet Sync
+    // Trigger Google Sheet Sync with Color Coding
     await this.syncTransactionToSheet(newTx);
   }
 
@@ -205,7 +216,7 @@ class PayTrackerApp {
     this.renderHistory();
   }
 
-  // --- Google Sheet Syncing ---
+  // --- Google Sheet Syncing with User Color Coding ---
   async syncTransactionToSheet(txItem) {
     if (!this.googleScriptUrl) return;
 
@@ -336,13 +347,13 @@ class PayTrackerApp {
 
     const userTotals = {};
     this.transactions.forEach(tx => {
-      const user = tx.loggedBy || 'Disha (Owner)';
-      userTotals[user] = (userTotals[user] || 0) + parseFloat(tx.amount || 0);
+      const raw = (tx.loggedBy || '').toLowerCase();
+      const displayName = (raw.indexOf('dish') !== -1 || raw.indexOf('owner') !== -1) ? '🌸 Disha' : ((raw.indexOf('shiv') !== -1) ? '⚡ Shivdattsinh' : 'User');
+      userTotals[displayName] = (userTotals[displayName] || 0) + parseFloat(tx.amount || 0);
     });
 
-    const userLabels = Object.keys(userTotals).length > 0 ? Object.keys(userTotals) : ['dishiv (Owner)', 'shiv (User)'];
+    const userLabels = Object.keys(userTotals).length > 0 ? Object.keys(userTotals) : ['🌸 Disha', '⚡ Shivdattsinh'];
     const userAmounts = userLabels.map(u => userTotals[u] || 0);
-    const colorPalette = ['#ec4899', '#6366f1', '#10b981', '#f59e0b', '#8b5cf6', '#3b82f6'];
 
     this.barChart = new Chart(ctxBar, {
       type: 'bar',
@@ -351,7 +362,7 @@ class PayTrackerApp {
         datasets: [{
           label: 'Total Expenses Logged This Month (₹)',
           data: userAmounts,
-          backgroundColor: userLabels.map((_, i) => colorPalette[i % colorPalette.length]),
+          backgroundColor: ['#f472b6', '#6366f1'],
           borderRadius: 8
         }]
       },
@@ -381,7 +392,7 @@ class PayTrackerApp {
     }
   }
 
-  // --- Salary Modal Handlers ---
+  // --- Salary Modal Handlers (Accessible by Both Co-Owners) ---
   closeSalaryModal() {
     document.getElementById('salaryModal').classList.add('hidden');
   }
@@ -397,10 +408,6 @@ class PayTrackerApp {
   }
 
   openSalaryModal() {
-    if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
-      alert('🔒 Access Restricted: Only Owner (Disha) can edit monthly salary!');
-      return;
-    }
     document.getElementById('salaryInputModal').value = this.salary || '';
     document.getElementById('salaryModal').classList.remove('hidden');
   }
@@ -414,33 +421,16 @@ class PayTrackerApp {
     if (subUrlInput) subUrlInput.value = dbConfig.url;
     if (subKeyInput) subKeyInput.value = dbConfig.key;
 
-    if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
-      if (urlInput) {
-        urlInput.disabled = true;
-        urlInput.placeholder = '🔒 Linked by Owner (Disha)';
-      }
-      if (subUrlInput) subUrlInput.disabled = true;
-      if (subKeyInput) subKeyInput.disabled = true;
-
-      const saveBtns = document.querySelectorAll('#settingsTab .primary-btn');
-      saveBtns.forEach(btn => btn.style.display = 'none');
-    }
-
     // Schedule 8:30 PM Evening Reminder
     this.scheduleEveningReminder();
 
-    // Load Owner Audit Logs if Owner
+    // Load Audit Logs
     this.loadAuditLogs();
   }
 
   async loadAuditLogs() {
     const auditSection = document.getElementById('ownerAuditSection');
     const auditList = document.getElementById('auditLogsList');
-
-    if (typeof auth !== 'undefined' && !auth.isOwner()) {
-      if (auditSection) auditSection.style.display = 'none';
-      return;
-    }
 
     if (auditSection) auditSection.style.display = 'flex';
 
@@ -457,7 +447,7 @@ class PayTrackerApp {
           <div class="tx-left">
             <div class="tx-icon">${log.action === 'USER_LOGIN' ? '🔐' : '🔑'}</div>
             <div class="tx-details">
-              <h4>${log.username} (${log.role || 'USER'})</h4>
+              <h4>${log.username} (Co-Owner Admin)</h4>
               <div class="tx-meta">
                 <span>${new Date(log.logged_at).toLocaleString('en-IN')}</span> • <span>${log.device_type || 'Device'}</span>
               </div>
@@ -472,10 +462,6 @@ class PayTrackerApp {
   }
 
   async saveSupabaseSettings() {
-    if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
-      alert('🔒 Access Restricted: Only Owner (Disha) can modify Supabase Cloud DB settings!');
-      return;
-    }
     const rawUrl = document.getElementById('supabaseUrlInput').value.trim();
     const key = document.getElementById('supabaseKeyInput').value.trim();
 
@@ -494,7 +480,7 @@ class PayTrackerApp {
     try {
       const { data, error } = await client.from('transactions').select('id').limit(1);
       if (error) {
-        alert('Supabase Connection Error: ' + error.message + '\nMake sure you executed database/supabase_setup.sql in Supabase SQL Editor!');
+        alert('Supabase Connection Error: ' + error.message);
       } else {
         alert('🎉 Supabase Connection Successful! Connected to 24/7 Cloud DB!');
       }
@@ -504,10 +490,6 @@ class PayTrackerApp {
   }
 
   async saveSettings() {
-    if (typeof auth !== 'undefined' && typeof auth.isOwner === 'function' && !auth.isOwner()) {
-      alert('🔒 Access Restricted: Only Owner (Disha) can modify Google Sheet URL settings!');
-      return;
-    }
     const url = document.getElementById('googleSheetScriptUrl').value.trim();
     this.googleScriptUrl = url;
     await budgetService.saveConfig('google_sheet_url', url);

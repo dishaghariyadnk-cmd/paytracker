@@ -237,6 +237,40 @@ input[type="number"], input[type="text"], input[type="url"], select {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+/* User Specific Row Tints & Badges */
+.tx-item.user-disha {
+  background: rgba(244, 114, 182, 0.06);
+  border-color: rgba(244, 114, 182, 0.25);
+}
+
+.tx-item.user-shiv {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.user-badge-disha {
+  background: rgba(244, 114, 182, 0.15);
+  color: #f472b6;
+  border: 1px solid rgba(244, 114, 182, 0.3);
+}
+
+.user-badge-shiv {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
 .tx-left { display: flex; align-items: center; gap: 0.85rem; }
