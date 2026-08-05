@@ -25,15 +25,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Modular Services -->
-  <script src="src/config/database.js?v=7"></script>
-  <script src="src/services/audit.service.js?v=7"></script>
-  <script src="src/services/auth.service.js?v=7"></script>
-  <script src="src/services/transaction.service.js?v=7"></script>
-  <script src="src/services/ipo.service.js?v=7"></script>
-  <script src="src/services/budget.service.js?v=7"></script>
+  <script src="src/config/database.js?v=8"></script>
+  <script src="src/services/audit.service.js?v=8"></script>
+  <script src="src/services/auth.service.js?v=8"></script>
+  <script src="src/services/transaction.service.js?v=8"></script>
+  <script src="src/services/ipo.service.js?v=8"></script>
+  <script src="src/services/budget.service.js?v=8"></script>
 
   <!-- Auth Engine & Authorization Guard -->
-  <script src="auth.js?v=7"></script>
+  <script src="auth.js?v=8"></script>
   <script>
     auth.requireAuth();
   </script>
@@ -187,7 +187,14 @@
 
       <section class="section-card">
         <div class="history-header">
-          <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> Payment History</h2>
+          <div>
+            <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> Payment History</h2>
+            <div class="filter-pills" style="display:flex; gap:0.4rem; margin-top:0.4rem;">
+              <button class="numpad-btn active-pill" id="filterAllBtn" onclick="app.filterHistory('ALL')">All Entries</button>
+              <button class="numpad-btn" id="filterDishaBtn" onclick="app.filterHistory('DISHA')">🌸 Disha Only</button>
+              <button class="numpad-btn" id="filterShivBtn" onclick="app.filterHistory('SHIV')">⚡ Shivdattsinh Only</button>
+            </div>
+          </div>
           <span class="badge" id="syncStatusBadge">🟢 Cloud DB Synced</span>
         </div>
 
@@ -353,6 +360,6 @@
   </div>
 
   <!-- App Orchestrator -->
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

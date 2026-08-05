@@ -1,4 +1,4 @@
-// Main DiShiv PayTracker Orchestrator (Universal Access - No Role System)
+// Main DiShiv PayTracker Orchestrator (Universal Access - 100% DB Dynamic API Driven)
 class PayTrackerApp {
   constructor() {
     this.selectedCategory = 'Credit Card Bill';
@@ -6,6 +6,7 @@ class PayTrackerApp {
     this.transactions = [];
     this.ipoList = [];
     this.googleScriptUrl = '';
+    this.currentFilter = 'ALL';
 
     // Direct Supabase Cloud REST API Endpoint for GitHub Pages
     this.supabaseUrl = localStorage.getItem('paytracker_supabaseUrl') || 'https://qhujytjjpgwovpzeierr.supabase.co';
@@ -109,13 +110,40 @@ class PayTrackerApp {
     if (wantsEl) wantsEl.innerText = `₹${wantsBudget.toLocaleString('en-IN')}`;
   }
 
+  filterHistory(mode) {
+    this.currentFilter = mode;
+
+    document.getElementById('filterAllBtn').classList.remove('active-pill');
+    document.getElementById('filterDishaBtn').classList.remove('active-pill');
+    document.getElementById('filterShivBtn').classList.remove('active-pill');
+
+    if (mode === 'DISHA') document.getElementById('filterDishaBtn').classList.add('active-pill');
+    else if (mode === 'SHIV') document.getElementById('filterShivBtn').classList.add('active-pill');
+    else document.getElementById('filterAllBtn').classList.add('active-pill');
+
+    this.renderHistory();
+  }
+
   // --- Transaction History ---
   renderHistory() {
     const listContainer = document.getElementById('txHistoryList');
     if (!listContainer) return;
 
-    if (this.transactions.length === 0) {
-      listContainer.innerHTML = `<div class="empty-state">No payment entries recorded yet. Tap "Record Payment Entry" above to add your first entry!</div>`;
+    let filtered = this.transactions;
+    if (this.currentFilter === 'DISHA') {
+      filtered = this.transactions.filter(t => {
+        const u = (t.loggedBy || '').toLowerCase();
+        return u.indexOf('dish') !== -1 || u.indexOf('owner') !== -1;
+      });
+    } else if (this.currentFilter === 'SHIV') {
+      filtered = this.transactions.filter(t => {
+        const u = (t.loggedBy || '').toLowerCase();
+        return u.indexOf('shiv') !== -1;
+      });
+    }
+
+    if (filtered.length === 0) {
+      listContainer.innerHTML = `<div class="empty-state">No payment entries found for selected filter.</div>`;
       return;
     }
 
@@ -133,7 +161,7 @@ class PayTrackerApp {
       'General / Other': '💸'
     };
 
-    listContainer.innerHTML = this.transactions.map(tx => {
+    listContainer.innerHTML = filtered.map(tx => {
       const loggedUserStr = (tx.loggedBy || '').toLowerCase();
       const isDisha = loggedUserStr.indexOf('dish') !== -1;
       const isShiv = loggedUserStr.indexOf('shiv') !== -1;
