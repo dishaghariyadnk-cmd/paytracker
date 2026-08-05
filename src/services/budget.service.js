@@ -2,7 +2,7 @@
 class BudgetService {
   async fetchSalary() {
     const client = dbConfig.getClient();
-    if (!client) return 0;
+    if (!client) return 50000;
 
     try {
       const { data, error } = await client
@@ -12,13 +12,14 @@ class BudgetService {
         .limit(1)
         .single();
 
-      if (!error && data) {
+      if (!error && data && data.monthly_salary) {
         return parseFloat(data.monthly_salary || 0);
       }
-      return 0;
+      // If table is unseeded yet, return default starting salary 50000
+      return 50000;
     } catch (err) {
       console.warn('Salary fetch exception:', err);
-      return 0;
+      return 50000;
     }
   }
 
