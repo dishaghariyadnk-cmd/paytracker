@@ -25,15 +25,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Modular Services -->
-  <script src="src/config/database.js?v=6"></script>
-  <script src="src/services/audit.service.js?v=6"></script>
-  <script src="src/services/auth.service.js?v=6"></script>
-  <script src="src/services/transaction.service.js?v=6"></script>
-  <script src="src/services/ipo.service.js?v=6"></script>
-  <script src="src/services/budget.service.js?v=6"></script>
+  <script src="src/config/database.js?v=7"></script>
+  <script src="src/services/audit.service.js?v=7"></script>
+  <script src="src/services/auth.service.js?v=7"></script>
+  <script src="src/services/transaction.service.js?v=7"></script>
+  <script src="src/services/ipo.service.js?v=7"></script>
+  <script src="src/services/budget.service.js?v=7"></script>
 
   <!-- Auth Engine & Authorization Guard -->
-  <script src="auth.js?v=6"></script>
+  <script src="auth.js?v=7"></script>
   <script>
     auth.requireAuth();
   </script>
@@ -131,7 +131,8 @@
         <div class="form-group">
           <label>Select Payment Category</label>
           <div class="category-grid">
-            <button class="cat-chip active" onclick="app.selectCategory('Groceries', this)">🛒 Groceries</button>
+            <button class="cat-chip active" onclick="app.selectCategory('Credit Card Bill', this)">💳 Credit Card Bill</button>
+            <button class="cat-chip" onclick="app.selectCategory('Groceries', this)">🛒 Groceries</button>
             <button class="cat-chip" onclick="app.selectCategory('IPO Application', this)">📈 IPO Application</button>
             <button class="cat-chip" onclick="app.selectCategory('Petrol / Fuel', this)">⛽ Petrol / Fuel</button>
             <button class="cat-chip" onclick="app.selectCategory('Gas Cylinder', this)">🔥 Gas Cylinder</button>
@@ -155,6 +156,7 @@
           <div class="form-group flex-1">
             <label>Payment Method</label>
             <select id="txPaymentMethod">
+              <option value="Credit Card">💳 Credit Card</option>
               <option value="GPay (QR Scan)">GPay (QR)</option>
               <option value="PhonePe">PhonePe</option>
               <option value="Paytm">Paytm</option>
@@ -166,16 +168,16 @@
         </div>
 
         <div class="numpad-row">
-          <button type="button" class="numpad-btn" onclick="app.appendNumpad(50)">+ ₹50</button>
-          <button type="button" class="numpad-btn" onclick="app.appendNumpad(100)">+ ₹100</button>
-          <button type="button" class="numpad-btn" onclick="app.appendNumpad(200)">+ ₹200</button>
           <button type="button" class="numpad-btn" onclick="app.appendNumpad(500)">+ ₹500</button>
           <button type="button" class="numpad-btn" onclick="app.appendNumpad(1000)">+ ₹1000</button>
+          <button type="button" class="numpad-btn" onclick="app.appendNumpad(2000)">+ ₹2000</button>
+          <button type="button" class="numpad-btn" onclick="app.appendNumpad(5000)">+ ₹5000</button>
+          <button type="button" class="numpad-btn" onclick="app.appendNumpad(10000)">+ ₹10000</button>
         </div>
 
         <div class="form-group">
           <label>Notes / Receiver Name (Optional)</label>
-          <input type="text" id="txNotes" placeholder="e.g. Reliance Smart, D-Mart, Petrol Pump">
+          <input type="text" id="txNotes" placeholder="e.g. HDFC Credit Card Bill, SBI Card, Reliance Smart">
         </div>
 
         <button class="primary-btn submit-btn" onclick="app.handleAddEntry()">
@@ -351,6 +353,6 @@
   </div>
 
   <!-- App Orchestrator -->
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

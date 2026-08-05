@@ -1,7 +1,7 @@
 // Main DiShiv PayTracker Orchestrator (Universal Access - No Role System)
 class PayTrackerApp {
   constructor() {
-    this.selectedCategory = 'Groceries';
+    this.selectedCategory = 'Credit Card Bill';
     this.salary = 0;
     this.transactions = [];
     this.ipoList = [];
@@ -120,6 +120,7 @@ class PayTrackerApp {
     }
 
     const iconMap = {
+      'Credit Card Bill': '💳',
       'Groceries': '🛒',
       'IPO Application': '📈',
       'Petrol / Fuel': '⛽',
