@@ -1,4 +1,4 @@
-// Main DiShiv PayTracker Orchestrator (100% Dynamic REST API Driven for GitHub Pages)
+// Main DiShiv PayTracker Orchestrator (Universal Access - No Role System)
 class PayTrackerApp {
   constructor() {
     this.selectedCategory = 'Groceries';
@@ -70,13 +70,12 @@ class PayTrackerApp {
 
   // --- Metrics Calculation ---
   renderHeaderAndMetrics() {
-    // Display active logged-in user & role badge (Both Disha & Shivdattsinh are Co-Owners)
     if (typeof auth !== 'undefined') {
       const currentUser = auth.getCurrentUser();
       const userDisplay = currentUser.toLowerCase() === 'shiv' ? '⚡ Shivdattsinh' : '🌸 Disha';
       const userSubEl = document.getElementById('userProfileSub');
       if (userSubEl) {
-        userSubEl.innerHTML = `Logged in as: <strong>${userDisplay}</strong> (👑 Co-Owner Vault Admin)`;
+        userSubEl.innerHTML = `Logged in as: <strong>${userDisplay}</strong>`;
       }
     }
 
@@ -135,7 +134,7 @@ class PayTrackerApp {
 
     listContainer.innerHTML = this.transactions.map(tx => {
       const loggedUserStr = (tx.loggedBy || '').toLowerCase();
-      const isDisha = loggedUserStr.indexOf('dish') !== -1 || loggedUserStr.indexOf('owner') !== -1;
+      const isDisha = loggedUserStr.indexOf('dish') !== -1;
       const isShiv = loggedUserStr.indexOf('shiv') !== -1;
 
       const rowClass = isDisha ? 'user-disha' : (isShiv ? 'user-shiv' : '');
@@ -216,7 +215,7 @@ class PayTrackerApp {
     this.renderHistory();
   }
 
-  // --- Google Sheet Syncing with User Color Coding ---
+  // --- Google Sheet Syncing ---
   async syncTransactionToSheet(txItem) {
     if (!this.googleScriptUrl) return;
 
@@ -348,7 +347,7 @@ class PayTrackerApp {
     const userTotals = {};
     this.transactions.forEach(tx => {
       const raw = (tx.loggedBy || '').toLowerCase();
-      const displayName = (raw.indexOf('dish') !== -1 || raw.indexOf('owner') !== -1) ? '🌸 Disha' : ((raw.indexOf('shiv') !== -1) ? '⚡ Shivdattsinh' : 'User');
+      const displayName = (raw.indexOf('dish') !== -1) ? '🌸 Disha' : ((raw.indexOf('shiv') !== -1) ? '⚡ Shivdattsinh' : 'User');
       userTotals[displayName] = (userTotals[displayName] || 0) + parseFloat(tx.amount || 0);
     });
 
@@ -392,7 +391,7 @@ class PayTrackerApp {
     }
   }
 
-  // --- Salary Modal Handlers (Accessible by Both Co-Owners) ---
+  // --- Salary Modal Handlers ---
   closeSalaryModal() {
     document.getElementById('salaryModal').classList.add('hidden');
   }
@@ -447,7 +446,7 @@ class PayTrackerApp {
           <div class="tx-left">
             <div class="tx-icon">${log.action === 'USER_LOGIN' ? '🔐' : '🔑'}</div>
             <div class="tx-details">
-              <h4>${log.username} (Co-Owner Admin)</h4>
+              <h4>${log.username}</h4>
               <div class="tx-meta">
                 <span>${new Date(log.logged_at).toLocaleString('en-IN')}</span> • <span>${log.device_type || 'Device'}</span>
               </div>
