@@ -5,7 +5,8 @@ class PayTrackerApp {
     this.salary = 0;
     this.transactions = [];
     this.ipoList = [];
-    this.googleScriptUrl = '';
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFT_GmHzr2wLIvPrv-SPaGgUO3Dw7AKgaZSFwGJ7XBsdbX2rhYQAHt7koZvNe2xX6B/exec';
+    this.googleScriptUrl = localStorage.getItem('paytracker_googleScriptUrl') || DEFAULT_SCRIPT_URL;
     this.currentFilter = 'ALL';
 
     // Direct Supabase Cloud REST API Endpoint for GitHub Pages
@@ -24,12 +25,21 @@ class PayTrackerApp {
       auth.requireAuth();
     }
 
-    // 2. Fetch App Config & Google Sheet URL from DB API
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFT_GmHzr2wLIvPrv-SPaGgUO3Dw7AKgaZSFwGJ7XBsdbX2rhYQAHt7koZvNe2xX6B/exec';
+
+    // 2. Fetch App Config & Google Sheet URL from DB API / LocalStorage
     const sheetUrlFromDB = await budgetService.fetchConfig('google_sheet_url');
     if (sheetUrlFromDB) {
       this.googleScriptUrl = sheetUrlFromDB;
-      const urlInput = document.getElementById('googleSheetScriptUrl');
-      if (urlInput) urlInput.value = sheetUrlFromDB;
+      localStorage.setItem('paytracker_googleScriptUrl', sheetUrlFromDB);
+    } else {
+      this.googleScriptUrl = localStorage.getItem('paytracker_googleScriptUrl') || DEFAULT_SCRIPT_URL;
+      // Automatically persist to DB config if not set yet
+      await budgetService.saveConfig('google_sheet_url', DEFAULT_SCRIPT_URL);
+    }
+    const urlInput = document.getElementById('googleSheetScriptUrl');
+    if (urlInput && this.googleScriptUrl) {
+      urlInput.value = this.googleScriptUrl;
     }
 
     // 3. Fetch Salary from DB API
@@ -246,18 +256,95 @@ class PayTrackerApp {
 
   // --- Google Sheet Syncing ---
   async syncTransactionToSheet(txItem) {
-    if (!this.googleScriptUrl) return;
+    const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFT_GmHzr2wLIvPrv-SPaGgUO3Dw7AKgaZSFwGJ7XBsdbX2rhYQAHt7koZvNe2xX6B/exec';
+    const url = this.googleScriptUrl || localStorage.getItem('paytracker_googleScriptUrl') || DEFAULT_SCRIPT_URL;
+    if (!url) {
+      console.warn('Google Script URL is not set.');
+      return false;
+    }
 
     try {
-      await fetch(this.googleScriptUrl, {
+      await fetch(url, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(txItem)
       });
+      console.log('Successfully triggered Google Sheet Sync for', txItem.id);
+      return true;
     } catch (err) {
       console.warn('Google Sheet Sync Error:', err);
+      return false;
     }
+  }
+
+  async testGoogleSheetConnection() {
+    const urlInput = document.getElementById('googleSheetScriptUrl');
+    const url = (urlInput ? urlInput.value : this.googleScriptUrl).trim();
+
+    if (!url) {
+      alert('⚠️ Gracefully Enter Google Apps Script Web App URL first!\n\nSettings tab ma Google Apps Script Web App URL enter karo.');
+      return;
+    }
+
+    if (url.includes('docs.google.com/spreadsheets')) {
+      alert('⚠️ Note: Tamhe Google Sheet ni URL paste kari 6e!\n\nGoogle Apps Script Web App URL paste karo:\n1. Google Sheet ma Extensions -> Apps Script ma jao.\n2. Script save karine Deploy -> New Deployment -> Web App select karo.\n3. "Who has access" ma "Anyone" select karo.\n4. Male Web App URL (je /exec thi end thaye 6e) ahiya paste karo.');
+      return;
+    }
+
+    try {
+      const testTx = {
+        id: 'TEST-' + Date.now(),
+        datetime: new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' }),
+        type: 'Expense',
+        category: 'Test Sync',
+        amount: 1,
+        paymentMethod: 'Test',
+        notes: 'Test entry from PayTracker App',
+        loggedBy: (typeof auth !== 'undefined') ? auth.getCurrentUser() : 'TestUser',
+        status: 'Completed'
+      };
+
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(testTx)
+      });
+
+      this.googleScriptUrl = url;
+      localStorage.setItem('paytracker_googleScriptUrl', url);
+      await budgetService.saveConfig('google_sheet_url', url);
+
+      alert('🎉 Test Request successfully sent! Tamari Google Sheet open karine check karo - "Test Sync" vali line add thai gayi hase.');
+    } catch (err) {
+      alert('⚠️ Google Sheet Sync Test Failed: ' + err.toString());
+    }
+  }
+
+  async syncAllToSheet() {
+    const url = this.googleScriptUrl || localStorage.getItem('paytracker_googleScriptUrl');
+    if (!url) {
+      alert('⚠️ Google Apps Script Web App URL missing! Settings tab ma URL save karo.');
+      return;
+    }
+
+    if (this.transactions.length === 0) {
+      alert('No entries available to sync!');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to sync all ${this.transactions.length} entries to your Google Sheet?`)) {
+      return;
+    }
+
+    let successCount = 0;
+    for (const tx of this.transactions) {
+      const ok = await this.syncTransactionToSheet(tx);
+      if (ok) successCount++;
+    }
+
+    alert(`🎉 Sync Complete! ${this.transactions.length} entries process thaya.`);
   }
 
   // --- IPO Application Manager ---
@@ -518,10 +605,18 @@ class PayTrackerApp {
   }
 
   async saveSettings() {
-    const url = document.getElementById('googleSheetScriptUrl').value.trim();
+    const urlInput = document.getElementById('googleSheetScriptUrl');
+    const url = urlInput ? urlInput.value.trim() : '';
+
+    if (url && url.includes('docs.google.com/spreadsheets')) {
+      alert('⚠️ Warning: Tamhe Google Sheet ni main link enter kari 6e!\n\nGoogle Apps Script Web App URL paste karo:\n1. Google Sheet ma Extensions -> Apps Script ma jao.\n2. Script save karine Deploy -> New Deployment -> Web App select karo.\n3. "Who has access" ma "Anyone" select karo.\n4. Male Web App URL (je /exec thi end thaye 6e) ahiya paste karo.');
+      return;
+    }
+
     this.googleScriptUrl = url;
+    localStorage.setItem('paytracker_googleScriptUrl', url);
     await budgetService.saveConfig('google_sheet_url', url);
-    alert('Google Apps Script Web App URL saved successfully to Cloud DB!');
+    alert('🎉 Google Apps Script Web App URL successfully save thai gayi 6e!');
   }
 
   // --- 8:30 PM Daily Reminder System ---

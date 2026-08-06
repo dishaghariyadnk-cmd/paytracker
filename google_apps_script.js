@@ -3,16 +3,27 @@
 
 function doPost(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getActiveSheet();
     
+    var data = {};
+    if (e && e.postData && e.postData.contents) {
+      try {
+        data = JSON.parse(e.postData.contents);
+      } catch (jsonErr) {
+        data = e.parameter || {};
+      }
+    } else if (e && e.parameter) {
+      data = e.parameter;
+    }
+
     // Header setup if sheet is brand new
     if (sheet.getLastRow() === 0) {
-      var headerRow = sheet.appendRow(["Transaction ID", "Date Time", "Type", "Category", "Amount (₹)", "Payment Method", "Notes / Receiver", "Logged By", "Status"]);
+      sheet.appendRow(["Transaction ID", "Date Time", "Type", "Category", "Amount (₹)", "Payment Method", "Notes / Receiver", "Logged By", "Status"]);
       sheet.getRange(1, 1, 1, 9).setFontWeight("bold").setBackground("#0f172a").setFontColor("#ffffff");
     }
 
-    var loggedUser = (data.loggedBy || "").toString();
+    var loggedUser = (data.loggedBy || data.logged_by || "").toString();
 
     // Append new payment row
     sheet.appendRow([
@@ -21,7 +32,7 @@ function doPost(e) {
       data.type || "Expense",
       data.category || "",
       data.amount || 0,
-      data.paymentMethod || "",
+      data.paymentMethod || data.payment_method || "",
       data.notes || "",
       loggedUser,
       data.status || "Completed"
@@ -53,3 +64,4 @@ function doPost(e) {
 function doGet(e) {
   return ContentService.createTextOutput("DiShiv PayTracker Google Apps Script Endpoint is Live!");
 }
+
